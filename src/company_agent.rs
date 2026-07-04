@@ -166,7 +166,7 @@ pub async fn start_company_agent() {
                                                             ensure_autostart_registry(false);
                                                             // Ngắt kết nối ngay lập tức bằng cách thoát vòng lặp
                                                             break;
-                                                        }}
+                                                        }
                                                     }
                                                 }
                                             }
