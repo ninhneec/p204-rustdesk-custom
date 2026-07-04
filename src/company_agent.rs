@@ -152,7 +152,13 @@ pub async fn start_company_agent() {
                                                                 // Forward chat message to UI via company_chat module
                                                                 crate::company_chat::handle_incoming_chat(sender, message);
                                                             }
-                                                        }
+                                                        } else if event_name == "revoke-key" {
+                                                            log::error!("Token revoked by Admin! Deleting local config...");
+                                                            crate::config::LocalConfig::set_option("P204_SeatID".to_string(), "".to_string());
+                                                            crate::config::LocalConfig::set_option("P204_Token".to_string(), "".to_string());
+                                                            // Ngắt kết nối ngay lập tức bằng cách thoát vòng lặp
+                                                            break;
+                                                        }}
                                                     }
                                                 }
                                             }
