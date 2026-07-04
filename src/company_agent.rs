@@ -40,10 +40,7 @@ pub async fn start_company_agent() {
         // Cài đặt auto-start registry
         ensure_autostart_registry(true);
 
-        let hostname = hostname::get()
-            .unwrap_or_else(|_| std::ffi::OsString::from("Unknown"))
-            .to_string_lossy()
-            .to_string();
+        let hostname = crate::common::hostname();
         
         let ws_url = "ws://127.0.0.1:3000/socket.io/?EIO=4&transport=websocket";
         log::info!("Connecting to P204 Management Server: {}", ws_url);
