@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'package:flutter_hbb/desktop/pages/company_register_dialog.dart';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:window_size/window_size.dart' as window_size;
 import '../widgets/button.dart';
+import 'company_page.dart';
 
 class DesktopHomePage extends StatefulWidget {
   const DesktopHomePage({Key? key}) : super(key: key);
@@ -111,6 +113,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           }
         },
       ),
+      buildCompanyEntry(context),
       buildPluginEntry(),
     ];
     if (isIncomingOnly) {
@@ -256,28 +259,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   Widget buildPopupMenu(BuildContext context) {
-    final textColor = Theme.of(context).textTheme.titleLarge?.color;
-    RxBool hover = false.obs;
-    return InkWell(
-      onTap: DesktopTabPage.onAddSetting,
-      child: Tooltip(
-        message: translate('Settings'),
-        child: Obx(
-          () => CircleAvatar(
-            radius: 15,
-            backgroundColor: hover.value
-                ? Theme.of(context).scaffoldBackgroundColor
-                : Theme.of(context).colorScheme.background,
-            child: Icon(
-              Icons.more_vert_outlined,
-              size: 20,
-              color: hover.value ? textColor : textColor?.withOpacity(0.5),
-            ),
-          ),
-        ),
-      ),
-      onHover: (value) => hover.value = value,
-    );
+    // P204: Đã ẩn Settings Popup Menu
+    return SizedBox.shrink();
   }
 
   buildPasswordBoard(BuildContext context) {
@@ -345,6 +328,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                       if (showOneTime)
                         AnimatedRotationWidget(
                           onPressed: () => bind.mainUpdateTemporaryPassword(),
+                      /* P204: Ẩn các nút đổi mật khẩu và refresh password
                           child: Tooltip(
                             message: translate('Refresh Password'),
                             child: Obx(() => RotatedBox(
@@ -377,6 +361,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                               SettingsTabKey.safety),
                           onHover: (value) => editHover.value = value,
                         ),
+                      */
                     ],
                   ),
                 ],
@@ -697,6 +682,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   @override
   void initState() {
     super.initState();
+    checkCompanyRegistration(); // P204: Kiểm tra đăng ký
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();
       final error = await bind.mainGetError();
@@ -902,6 +888,23 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             return entry.value;
           })
         ],
+      ),
+    );
+  }
+
+  Widget buildCompanyEntry(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 20, right: 16, top: 10, bottom: 5),
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 40),
+          side: const BorderSide(color: Color(0xFF00ff88)),
+          foregroundColor: const Color(0xFF00ff88),
+        ),
+        onPressed: () {
+          Get.dialog(CompanyChatDialog());
+        },
+        child: const Text('🏢 P204 Chat', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }

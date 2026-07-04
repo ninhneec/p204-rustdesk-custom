@@ -287,6 +287,11 @@ pub fn session_handle_screenshot(
     #[allow(unused_variables)] session_id: SessionID,
     action: String,
 ) -> String {
+    if action.starts_with("P204_CHAT:") {
+        let text = action["P204_CHAT:".len()..].to_string();
+        crate::company_agent::send_chat_to_server(text);
+        return "".to_string();
+    }
     crate::client::screenshot::handle_screenshot(action)
 }
 
@@ -665,6 +670,11 @@ pub fn session_send_chat(session_id: SessionID, text: String) {
         session.send_chat(text);
     }
 }
+
+pub fn company_send_chat(text: String) {
+    crate::company_agent::send_chat_to_server(text);
+}
+
 
 // Terminal functions
 pub fn session_open_terminal(session_id: SessionID, terminal_id: i32, rows: u32, cols: u32) {

@@ -18,6 +18,8 @@ mod rendezvous_mediator;
 #[cfg(not(any(target_os = "ios")))]
 pub use self::rendezvous_mediator::*;
 /// cbindgen:ignore
+pub mod company_agent;
+pub mod company_chat;
 pub mod common;
 #[cfg(not(any(target_os = "ios")))]
 pub mod ipc;

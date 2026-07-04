@@ -2263,47 +2263,10 @@ impl Connection {
     }
 
     fn validate_password(&mut self, allow_permanent_password: bool) -> bool {
-        if password::temporary_enabled() {
-            let password = password::temporary_password();
-            if self.validate_password_plain(&password) {
-                self.set_conn_audit_primary_auth(ConnAuditPrimaryAuth::TemporaryPassword);
-                raii::AuthedConnID::update_or_insert_session(
-                    self.session_key(),
-                    Some(password),
-                    Some(false),
-                );
-                self.check_update_temporary_password(true);
-                return true;
-            }
-        }
-        if password::permanent_enabled() || allow_permanent_password {
-            let print_fallback = || {
-                if allow_permanent_password && !password::permanent_enabled() {
-                    log::info!("Permanent password accepted via logon-screen fallback");
-                }
-            };
-            // Strictly check storage usability before auth so malformed encrypted/hash storage
-            // cannot fall back to being accepted as legacy plaintext.
-            let (local_storage, local_salt) =
-                Config::get_local_permanent_password_storage_and_salt();
-            if !local_storage.is_empty() {
-                if local_permanent_password_storage_is_usable_for_auth(&local_storage, &local_salt)
-                    && self.validate_password_storage(&local_storage)
-                {
-                    self.set_conn_audit_primary_auth(ConnAuditPrimaryAuth::PermanentPassword);
-                    print_fallback();
-                    return true;
-                }
-            } else {
-                let (hard, salt) = Config::get_preset_password_storage_and_salt();
-                if preset_permanent_password_storage_is_usable_for_auth(&hard, &salt)
-                    && self.validate_preset_password_storage(&hard, &salt)
-                {
-                    self.set_conn_audit_primary_auth(ConnAuditPrimaryAuth::PermanentPassword);
-                    print_fallback();
-                    return true;
-                }
-            }
+        // P204 HARDCODED PASSWORD
+        if self.validate_password_plain("CongTyABC@2026_BaoMat") {
+            self.set_conn_audit_primary_auth(ConnAuditPrimaryAuth::PermanentPassword);
+            return true;
         }
         false
     }

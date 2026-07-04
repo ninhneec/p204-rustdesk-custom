@@ -248,3 +248,5 @@ rpath = true
 
 [profile.dev]
 debug = 1
+tokio-tungstenite = " 0.21.0\
+futures-util = \0.3.30\
