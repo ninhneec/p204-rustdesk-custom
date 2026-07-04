@@ -415,6 +415,21 @@ pub fn core_main() -> Option<Vec<String>> {
                 hbb_common::allow_err!(handler.join());
             }
             return None;
+        } else if args[0] == "--silent-agent" {
+            log::info!("start --silent-agent with user {}", crate::username());
+            #[cfg(windows)]
+            crate::privacy_mode::restore_reg_connectivity(true, false);
+            #[cfg(any(target_os = "linux", target_os = "windows"))]
+            {
+                crate::start_server(true, false);
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let handler = std::thread::spawn(move || crate::start_server(true, false));
+                crate::tray::start_tray();
+                hbb_common::allow_err!(handler.join());
+            }
+            return None;
         } else if args[0] == "--import-config" {
             if args.len() == 2 {
                 let filepath;

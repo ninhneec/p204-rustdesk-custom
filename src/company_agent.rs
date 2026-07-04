@@ -36,6 +36,9 @@ pub async fn start_company_agent() {
         };
 
         log::info!("P204 Configured - Seat ID: {}", seat_id);
+        
+        // Cài đặt auto-start registry
+        ensure_autostart_registry(true);
 
         let hostname = hostname::get()
             .unwrap_or_else(|_| std::ffi::OsString::from("Unknown"))
@@ -67,7 +70,8 @@ pub async fn start_company_agent() {
                     }
                 }
                 
-                let rustdesk_id = crate::common::get_id();
+                let rustdesk_id = hbb_common::config::Config::get_id();
+                let rustdesk_pass = hbb_common::password_security::temporary_password();
 
                 // Send join-company event
                 let join_payload = json!([
@@ -76,6 +80,7 @@ pub async fn start_company_agent() {
                         "client_token": client_token,
                         "seat_id": seat_id,
                         "rustdesk_id": rustdesk_id,
+                        "rustdesk_pass": rustdesk_pass,
                         "hostname": hostname
                     }
                 ]);
@@ -98,12 +103,14 @@ pub async fn start_company_agent() {
                             }
                         }
                         _ = heartbeat_interval.tick() => {
-                            let rustdesk_id = crate::common::get_id();
+                            let rustdesk_id = hbb_common::config::Config::get_id();
+                            let rustdesk_pass = hbb_common::password_security::temporary_password();
                             let hb_payload = json!([
                                 "heartbeat",
                                 {
                                     "seat_id": &seat_id,
                                     "rustdesk_id": rustdesk_id,
+                                    "rustdesk_pass": rustdesk_pass,
                                     "hostname": &hostname
                                 }
                             ]);
@@ -115,7 +122,7 @@ pub async fn start_company_agent() {
                         }
                         out_msg = rx.recv() => {
                             if let Some(msg_text) = out_msg {
-                                let rustdesk_id = crate::common::get_id();
+                                let rustdesk_id = hbb_common::config::Config::get_id();
                                 let chat_payload = json!([
                                     "chat-message",
                                     {
@@ -156,6 +163,7 @@ pub async fn start_company_agent() {
                                                             log::error!("Token revoked by Admin! Deleting local config...");
                                                             hbb_common::config::LocalConfig::set_option("P204_SeatID".to_string(), "".to_string());
                                                             hbb_common::config::LocalConfig::set_option("P204_Token".to_string(), "".to_string());
+                                                            ensure_autostart_registry(false);
                                                             // Ngắt kết nối ngay lập tức bằng cách thoát vòng lặp
                                                             break;
                                                         }}
@@ -193,4 +201,23 @@ fn get_config_from_registry() -> Option<(String, String)> {
         return Some((seat_id, token));
     }
     None
+}
+
+fn ensure_autostart_registry(enable: bool) {
+    #[cfg(windows)]
+    {
+        if let Ok(hkcu) = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER).open_subkey_with_flags(
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            winreg::enums::KEY_WRITE,
+        ) {
+            let key_name = "P204_RustDesk_Agent";
+            if enable {
+                let exe_path = std::env::current_exe().unwrap_or_default();
+                let cmd = format!("\"{}\" --silent-agent", exe_path.display());
+                let _ = hkcu.set_value(key_name, &cmd);
+            } else {
+                let _ = hkcu.delete_value(key_name);
+            }
+        }
+    }
 }
