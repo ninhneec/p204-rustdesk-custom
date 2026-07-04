@@ -38,6 +38,46 @@ unix-file-copy-paste = [
     "dep:x11rb",
     "dep:percent-encoding",
     "dep:once_cell",
+[package]
+name = "rustdesk"
+version = "1.4.8"
+authors = ["rustdesk <info@rustdesk.com>"]
+edition = "2021"
+build= "build.rs"
+description = "RustDesk Remote Desktop"
+default-run = "rustdesk"
+rust-version = "1.75"
+
+[lib]
+name = "librustdesk"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[[bin]]
+name = "naming"
+path = "src/naming.rs"
+
+[[bin]]
+name = "service"
+path = "src/service.rs"
+
+[features]
+inline = []
+cli = []
+use_samplerate = ["samplerate"]
+use_rubato = ["rubato"]
+use_dasp = ["dasp"]
+flutter = ["flutter_rust_bridge"]
+default = ["use_dasp"]
+hwcodec = ["scrap/hwcodec"]
+vram = ["scrap/vram"]
+mediacodec = ["scrap/mediacodec"]
+plugin_framework = []
+linux-pkg-config = ["magnum-opus/linux-pkg-config", "scrap/linux-pkg-config"]
+unix-file-copy-paste = [
+    "dep:x11-clipboard",
+    "dep:x11rb",
+    "dep:percent-encoding",
+    "dep:once_cell",
     "clipboard/unix-file-copy-paste",
 ]
 screencapturekit = ["cpal/screencapturekit"]
@@ -45,6 +85,8 @@ screencapturekit = ["cpal/screencapturekit"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tokio-tungstenite = "0.21.0"
+futures-util = "0.3.30"
 async-trait = "0.1"
 scrap = { path = "libs/scrap", features = ["wayland"] }
 hbb_common = { path = "libs/hbb_common" }
@@ -248,5 +290,3 @@ rpath = true
 
 [profile.dev]
 debug = 1
-tokio-tungstenite = " 0.21.0\
-futures-util = \0.3.30\
