@@ -203,6 +203,7 @@ fn get_config_from_registry() -> Option<(String, String)> {
     None
 }
 
+#[allow(unused_variables)]
 fn ensure_autostart_registry(enable: bool) {
     #[cfg(windows)]
     {
