@@ -325,10 +325,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                           ).workaroundFreezeLinuxMint(),
                         ),
                       ),
+                      /* P204: Ẩn các nút đổi mật khẩu và refresh password
                       if (showOneTime)
                         AnimatedRotationWidget(
                           onPressed: () => bind.mainUpdateTemporaryPassword(),
-                      /* P204: Ẩn các nút đổi mật khẩu và refresh password
                           child: Tooltip(
                             message: translate('Refresh Password'),
                             child: Obx(() => RotatedBox(
