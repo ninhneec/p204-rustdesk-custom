@@ -45,6 +45,8 @@ screencapturekit = ["cpal/screencapturekit"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tokio-tungstenite = "0.21.0"
+futures-util = "0.3.30"
 async-trait = "0.1"
 scrap = { path = "libs/scrap", features = ["wayland"] }
 hbb_common = { path = "libs/hbb_common" }
@@ -248,5 +250,3 @@ rpath = true
 
 [profile.dev]
 debug = 1
-tokio-tungstenite = " 0.21.0\
-futures-util = \0.3.30\
