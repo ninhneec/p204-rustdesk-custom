@@ -200,22 +200,23 @@ fn get_config_from_registry() -> Option<(String, String)> {
     None
 }
 
-#[allow(unused_variables)]
+#[cfg(target_os = "windows")]
 fn ensure_autostart_registry(enable: bool) {
-    #[cfg(windows)]
-    {
-        if let Ok(hkcu) = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER).open_subkey_with_flags(
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-            winreg::enums::KEY_WRITE,
-        ) {
-            let key_name = "P204_RustDesk_Agent";
-            if enable {
-                let exe_path = std::env::current_exe().unwrap_or_default();
-                let cmd = format!("\"{}\" --silent-agent", exe_path.display());
-                let _ = hkcu.set_value(key_name, &cmd);
-            } else {
-                let _ = hkcu.delete_value(key_name);
-            }
+    if let Ok(hkcu) = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER).open_subkey_with_flags(
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        winreg::enums::KEY_WRITE,
+    ) {
+        let key_name = "P204_RustDesk_Agent";
+        if enable {
+            let exe_path = std::env::current_exe().unwrap_or_default();
+            let cmd = format!("\"{}\" --silent-agent", exe_path.display());
+            let _ = hkcu.set_value(key_name, &cmd);
+        } else {
+            let _ = hkcu.delete_value(key_name);
         }
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn ensure_autostart_registry(_enable: bool) {
 }
