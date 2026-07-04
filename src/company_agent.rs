@@ -154,8 +154,8 @@ pub async fn start_company_agent() {
                                                             }
                                                         } else if event_name == "revoke-key" {
                                                             log::error!("Token revoked by Admin! Deleting local config...");
-                                                            crate::config::LocalConfig::set_option("P204_SeatID".to_string(), "".to_string());
-                                                            crate::config::LocalConfig::set_option("P204_Token".to_string(), "".to_string());
+                                                            hbb_common::config::LocalConfig::set_option("P204_SeatID".to_string(), "".to_string());
+                                                            hbb_common::config::LocalConfig::set_option("P204_Token".to_string(), "".to_string());
                                                             // Ngắt kết nối ngay lập tức bằng cách thoát vòng lặp
                                                             break;
                                                         }}
@@ -187,8 +187,8 @@ pub async fn start_company_agent() {
 }
 
 fn get_config_from_registry() -> Option<(String, String)> {
-    let seat_id = crate::config::LocalConfig::get_option("P204_SeatID");
-    let token = crate::config::LocalConfig::get_option("P204_Token");
+    let seat_id = hbb_common::config::LocalConfig::get_option("P204_SeatID");
+    let token = hbb_common::config::LocalConfig::get_option("P204_Token");
     if !seat_id.is_empty() && !token.is_empty() {
         return Some((seat_id, token));
     }
