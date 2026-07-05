@@ -54,15 +54,23 @@ pm2 start ./hbbr --name "hbbr" -- -k _
 pm2 save
 pm2 startup
 
-# 6. Hiển thị Key
+# 6. Tải và cài đặt Hệ thống Chat & Admin từ Github
+echo "Tải mã nguồn Quản lý & Chat từ Github..."
+cd ~
+git clone https://github.com/ninhneec/p204-rustdesk-custom.git
+cd p204-rustdesk-custom/p204-backend/server
+npm install
+pm2 start server.js --name p204-admin
+pm2 save
+
+# 7. Hiển thị thông tin hoàn tất
 echo "==========================================="
-echo "✅ ĐÃ CÀI ĐẶT THÀNH CÔNG RUSTDESK SERVER!"
-echo "🔑 ĐÂY LÀ PUBLIC KEY CỦA BẠN (Cần copy dán vào code hoặc Github):"
-cat ./id_ed25519.pub
+echo "✅ ĐÃ CÀI ĐẶT THÀNH CÔNG TOÀN BỘ HỆ THỐNG P204!"
+echo "🔑 ĐÂY LÀ PUBLIC KEY CỦA BẠN (Copy dán vào src/p204_config.rs trên Github):"
+cat ~/rustdesk-server/id_ed25519.pub
 echo ""
-echo "🌐 ĐỊA CHỈ IP CỦA VPS NÀY LÀ: $(curl -s ifconfig.me)"
+echo "🌐 ĐỊA CHỈ IP/TÊN MIỀN CỦA VPS NÀY LÀ: $PUBLIC_IP"
 echo "==========================================="
-echo "👉 BƯỚC TIẾP THEO:"
-echo "Hãy đưa thư mục 'server' và 'dashboard' lên VPS này, sau đó chạy lệnh:"
-echo "cd server && npm install && pm2 start server.js --name p204-admin"
+echo "👉 Hướng dẫn truy cập trang Quản Trị (Admin Dashboard):"
+echo "Hãy mở trình duyệt và truy cập: http://$PUBLIC_IP:3000"
 echo "==========================================="
