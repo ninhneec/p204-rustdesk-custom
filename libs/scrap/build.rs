@@ -47,7 +47,7 @@ fn link_vcpkg(mut path: PathBuf, name: &str) -> PathBuf {
             format!("{}-{}", target_arch, target_os)
         }
     } else if target_os == "windows" {
-        format!("{}-windows-static", target_arch)
+        "x64-windows-static".to_owned()
     } else {
         format!("{}-{}", target_arch, target_os)
     };
