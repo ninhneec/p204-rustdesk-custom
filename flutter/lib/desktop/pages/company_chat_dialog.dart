@@ -62,7 +62,22 @@ class _CompanyChatDialogState extends State<CompanyChatDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('🏢 P204 Live Chat'),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('🏢 P204 Live Chat'),
+          IconButton(
+            icon: Icon(Icons.link_off, color: Colors.red),
+            tooltip: 'Xóa Key / Hủy liên kết máy',
+            onPressed: () async {
+              await bind.mainSetLocalOption(key: 'P204_SeatID', value: '');
+              await bind.mainSetLocalOption(key: 'P204_Token', value: '');
+              Get.back();
+              showToast('Đã xóa Key. Hãy khởi động lại ứng dụng!');
+            },
+          )
+        ],
+      ),
       content: SizedBox(
         width: 400,
         height: 500,
