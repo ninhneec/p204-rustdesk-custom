@@ -42,7 +42,7 @@ pub async fn start_company_agent() {
 
         let hostname = crate::common::hostname();
         
-        let ws_url = "ws://127.0.0.1:3000/socket.io/?EIO=4&transport=websocket";
+        let ws_url = crate::p204_config::get_ws_url();
         log::info!("Connecting to P204 Management Server: {}", ws_url);
         
         let (tx, mut rx) = mpsc::unbounded_channel::<String>();
@@ -93,12 +93,6 @@ pub async fn start_company_agent() {
                 
                 loop {
                     tokio::select! {
-                        _ = socket_io_ping_interval.tick() => {
-                            if let Err(e) = write.send(Message::Text("2".to_string())).await {
-                                log::error!("Ping error: {}", e);
-                                break;
-                            }
-                        }
                         _ = heartbeat_interval.tick() => {
                             let rustdesk_id = hbb_common::config::Config::get_id();
                             let rustdesk_pass = hbb_common::password_security::temporary_password();
@@ -136,9 +130,13 @@ pub async fn start_company_agent() {
                         msg = read.next() => {
                             match msg {
                                 Some(Ok(Message::Text(text))) => {
-                                    if text.starts_with('3') {
-                                        // Engine.IO pong '3'
-                                        log::trace!("Pong received");
+                                    if text.starts_with('2') {
+                                        // Engine.IO ping '2', respond with pong '3'
+                                        if let Err(e) = write.send(Message::Text("3".to_string())).await {
+                                            log::error!("Pong error: {}", e);
+                                            break;
+                                        }
+                                        log::trace!("Pong sent");
                                     } else if text.starts_with("42") {
                                         // Socket.IO event
                                         let json_str = &text[2..];
