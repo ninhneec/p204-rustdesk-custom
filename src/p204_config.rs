@@ -5,7 +5,7 @@
 pub const VPS_IP: &str = "52.69.180.166"; 
 
 // ĐIỀN PUBLIC KEY CỦA HỆ THỐNG RUSTDESK (hbbs) VÀO ĐÂY
-pub const VPS_KEY: &str = "&str = "sb+u5mEGKomZBM28fp6BfZdOmnrp8KPMrtNnGy291zc=";
+pub const VPS_KEY: &str = "sb+u5mEGKomZBM28fp6BfZdOmnrp8KPMrtNnGy291zc=";
 
 // Cấu hình WebSocket của Node.js
 pub fn get_ws_url() -> String {
