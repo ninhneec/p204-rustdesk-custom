@@ -93,47 +93,9 @@ mod webrtc {
         }
     }
 
-    pub fn enc_cfg(
-        i: *const aom_codec_iface,
-        cfg: AomEncoderConfig,
-        i444: bool,
-    ) -> ResultType<aom_codec_enc_cfg> {
-        let mut c = unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
-        call_aom!(aom_codec_enc_config_default(i, &mut c, kUsageProfile));
-
-        // Overwrite default config with input encoder settings & RTC-relevant values.
-        c.g_w = cfg.width;
-        c.g_h = cfg.height;
-        c.g_threads = codec_thread_num(64) as _;
-        c.g_timebase.num = 1;
-        c.g_timebase.den = kTimeBaseDen as _;
-        c.g_input_bit_depth = kBitDepth;
-        if let Some(keyframe_interval) = cfg.keyframe_interval {
-            c.kf_min_dist = 0;
-            c.kf_max_dist = keyframe_interval as _;
-        } else {
-            c.kf_mode = aom_kf_mode::AOM_KF_DISABLED;
-        }
-        let (q_min, q_max) = AomEncoder::calc_q_values(cfg.quality);
-        c.rc_min_quantizer = q_min;
-        c.rc_max_quantizer = q_max;
-        c.rc_target_bitrate = AomEncoder::bitrate(cfg.width as _, cfg.height as _, cfg.quality);
-        c.rc_undershoot_pct = 50;
-        c.rc_overshoot_pct = 50;
-        c.rc_buf_initial_sz = 600;
-        c.rc_buf_optimal_sz = 600;
-        c.rc_buf_sz = 1000;
-        c.g_usage = kUsageProfile;
-        c.g_error_resilient = 0;
-        // Low-latency settings.
-        c.rc_end_usage = aom_rc_mode::AOM_CBR; // Constant Bit Rate (CBR) mode
-        c.g_pass = aom_enc_pass::AOM_RC_ONE_PASS; // One-pass rate control
-        c.g_lag_in_frames = kLagInFrames; // No look ahead when lag equals 0.
-
-        // https://aomedia.googlesource.com/aom/+/refs/tags/v3.6.0/av1/common/enums.h#82
-        c.g_profile = if i444 { 1 } else { 0 };
-
-        Ok(c)
+    pub fn config(cfg: crate::codec::Config, i444: bool) -> ResultType<aom_codec_enc_cfg> {
+        let mut c = unsafe { std::mem::zeroed() };
+        return Ok(c);
     }
 
     pub fn set_controls(ctx: *mut aom_codec_ctx_t, cfg: &aom_codec_enc_cfg) -> ResultType<()> {

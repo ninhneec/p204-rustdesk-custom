@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/ffi.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
