@@ -18,7 +18,9 @@ mod rendezvous_mediator;
 #[cfg(not(any(target_os = "ios")))]
 pub use self::rendezvous_mediator::*;
 /// cbindgen:ignore
+#[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
 pub mod company_agent;
+#[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
 pub mod company_chat;
 pub mod common;
 #[cfg(not(any(target_os = "ios")))]

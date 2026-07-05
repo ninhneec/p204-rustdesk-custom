@@ -1,4 +1,4 @@
-use hbb_common::{log, ResultType, tokio};
+use hbb_common::{log, tokio};
 use futures_util::{StreamExt, SinkExt};
 use serde_json::json;
 use std::time::Duration;

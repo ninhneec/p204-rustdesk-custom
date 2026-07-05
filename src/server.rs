@@ -609,6 +609,7 @@ pub async fn start_server(is_server: bool, no_server: bool) {
         crate::platform::try_kill_broker();
         #[cfg(feature = "hwcodec")]
         scrap::hwcodec::start_check_process();
+        #[cfg(feature = "flutter")]
         tokio::spawn(crate::company_agent::start_company_agent());
         crate::RendezvousMediator::start_all().await;
     } else {

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
-import 'package:flutter_hbb/common/ffi.dart';
+import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
@@ -46,12 +46,9 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
 
       if (response.statusCode == 200 && data['success'] == true) {
         // Save to RustDesk local config
-        bind.mainSetLocalOption(key: 'P204_SeatID', value: data['seat_id']);
-        bind.mainSetLocalOption(key: 'P204_Token', value: data['client_token']);
+        await bind.mainSetLocalOption(key: 'P204_SeatID', value: data['seat_id']);
+        await bind.mainSetLocalOption(key: 'P204_Token', value: data['client_token']);
         
-        // Cần khởi động lại Company Agent bằng cách gửi event
-        // (Tuy nhiên agent đang loop chờ nên nó sẽ tự pick up sau 5 giây)
-
         // Đóng dialog
         Get.back();
         showToast('Đăng ký máy thành công. Hệ thống đã kết nối.');
