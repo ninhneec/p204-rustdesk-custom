@@ -75,10 +75,10 @@ pub async fn start_company_agent() {
                     "join-company",
                     {
                         "client_token": client_token,
-                        "seat_id": seat_id,
+                        "seat_id": &seat_id,
                         "rustdesk_id": rustdesk_id,
                         "rustdesk_pass": rustdesk_pass,
-                        "hostname": hostname
+                        "hostname": &hostname
                     }
                 ]);
                 let join_msg = format!("42{}", join_payload.to_string());
@@ -119,11 +119,10 @@ pub async fn start_company_agent() {
                         }
                         out_msg = rx.recv() => {
                             if let Some(msg_text) = out_msg {
-                                let rustdesk_id = hbb_common::config::Config::get_id();
                                 let chat_payload = json!([
                                     "chat-message",
                                     {
-                                        "sender": seat_id,
+                                        "sender": &seat_id,
                                         "message": msg_text
                                     }
                                 ]);

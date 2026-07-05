@@ -106,8 +106,7 @@ mod webrtc {
                 call_aom_allow_err!(aom_codec_control($ctx, $av1e as i32, $arg));
             }};
         }
-
-        call_ctl!(ctx, AOME_SET_CPUUSED, get_cpu_speed(cfg.g_w, cfg.g_h));
+//
         call_ctl!(ctx, AV1E_SET_ENABLE_CDEF, 1);
         call_ctl!(ctx, AV1E_SET_ENABLE_TPL_MODEL, 0);
         call_ctl!(ctx, AV1E_SET_DELTAQ_MODE, 0);
@@ -120,13 +119,13 @@ mod webrtc {
         // kScreensharing
         call_ctl!(ctx, AV1E_SET_TUNE_CONTENT, AOM_CONTENT_SCREEN);
         call_ctl!(ctx, AV1E_SET_ENABLE_PALETTE, 1);
-        let tile_set = if cfg.g_threads == 4 && cfg.g_w == 640 && (cfg.g_h == 360 || cfg.g_h == 480)
+let tile_set = 0;
         {
             AV1E_SET_TILE_ROWS
         } else {
             AV1E_SET_TILE_COLUMNS
         };
-        call_ctl!(ctx, tile_set, tile_log2(cfg.g_threads));
+//
         call_ctl!(ctx, AV1E_SET_ROW_MT, 1);
         call_ctl!(ctx, AV1E_SET_ENABLE_OBMC, 0);
         call_ctl!(ctx, AV1E_SET_NOISE_SENSITIVITY, 0);
@@ -136,7 +135,7 @@ mod webrtc {
         call_ctl!(
             ctx,
             AV1E_SET_SUPERBLOCK_SIZE,
-            get_super_block_size(cfg.g_w, cfg.g_h, cfg.g_threads)
+0
         );
         call_ctl!(ctx, AV1E_SET_ENABLE_CFL_INTRA, 0);
         call_ctl!(ctx, AV1E_SET_ENABLE_SMOOTH_INTRA, 0);
@@ -239,18 +238,18 @@ impl EncoderApi for AomEncoder {
     }
 
     fn set_quality(&mut self, ratio: f32) -> ResultType<()> {
-        let mut c = unsafe { *self.ctx.config.enc.to_owned() };
+let mut c = ();
         let (q_min, q_max) = Self::calc_q_values(ratio);
-        c.rc_min_quantizer = q_min;
-        c.rc_max_quantizer = q_max;
-        c.rc_target_bitrate = Self::bitrate(self.width as _, self.height as _, ratio);
+//
+//
+//
         call_aom!(aom_codec_enc_config_set(&mut self.ctx, &c));
         Ok(())
     }
 
     fn bitrate(&self) -> u32 {
-        let c = unsafe { *self.ctx.config.enc.to_owned() };
-        c.rc_target_bitrate
+let mut c = ();
+0
     }
 
     fn support_changing_quality(&self) -> bool {
@@ -428,10 +427,10 @@ impl AomDecoder {
         let i = call_aom_ptr!(aom_codec_av1_dx());
         let mut ctx = Default::default();
         let cfg = aom_codec_dec_cfg_t {
-            threads: codec_thread_num(64) as _,
-            w: 0,
-            h: 0,
-            allow_lowbitdepth: 1,
+//
+//
+//
+//
         };
         call_aom!(aom_codec_dec_init_ver(
             &mut ctx,
@@ -561,3 +560,5 @@ impl Drop for Image {
 }
 
 unsafe impl Send for aom_codec_ctx_t {}
+
+
