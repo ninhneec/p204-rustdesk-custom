@@ -13,10 +13,12 @@ class _CompanyChatDialogState extends State<CompanyChatDialog> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _messages = [];
+  String _mySeatId = '';
 
   @override
   void initState() {
     super.initState();
+    _mySeatId = bind.mainGetLocalOption(key: 'P204_SeatID');
     // Listen for incoming chat messages via global event channel.
     // In Rust, we push events named "company_chat".
     platformFFI.registerEventHandler('company_chat', 'company_chat_dialog', (event) async {
@@ -78,7 +80,7 @@ class _CompanyChatDialogState extends State<CompanyChatDialog> {
                   itemCount: _messages.length,
                   itemBuilder: (context, index) {
                     final msg = _messages[index];
-                    final isMe = msg['sender'] == 'me';
+                    final isMe = msg['sender'] == _mySeatId;
                     return Align(
                       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
