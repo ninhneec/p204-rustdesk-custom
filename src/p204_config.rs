@@ -7,7 +7,10 @@ pub const VPS_IP: &str = "YOUR_VPS_IP";
 // ĐIỀN PUBLIC KEY CỦA HỆ THỐNG RUSTDESK (hbbs) VÀO ĐÂY
 pub const VPS_KEY: &str = "YOUR_VPS_KEY";
 
-// Cấu hình WebSocket của Node.js (Không cần sửa nếu Node.js vẫn chạy port 3000)
+// Cấu hình WebSocket của Node.js
 pub fn get_ws_url() -> String {
+    if VPS_IP == "YOUR_VPS_IP" {
+        return "ws://127.0.0.1:3000/socket.io/?EIO=4&transport=websocket".to_string();
+    }
     format!("ws://{}:3000/socket.io/?EIO=4&transport=websocket", VPS_IP)
 }
