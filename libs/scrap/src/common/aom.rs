@@ -102,36 +102,36 @@ mod webrtc {
         call_aom!(aom_codec_enc_config_default(i, &mut c, kUsageProfile));
 
         // Overwrite default config with input encoder settings & RTC-relevant values.
-        c.g_w = cfg.width;
-        c.g_h = cfg.height;
-        c.g_threads = codec_thread_num(64) as _;
+//
+//
+//
         c.g_timebase.num = 1;
         c.g_timebase.den = kTimeBaseDen as _;
-        c.g_input_bit_depth = kBitDepth;
+//
         if let Some(keyframe_interval) = cfg.keyframe_interval {
-            c.kf_min_dist = 0;
-            c.kf_max_dist = keyframe_interval as _;
+//
+//
         } else {
-            c.kf_mode = aom_kf_mode::AOM_KF_DISABLED;
+//
         }
         let (q_min, q_max) = AomEncoder::calc_q_values(cfg.quality);
-        c.rc_min_quantizer = q_min;
-        c.rc_max_quantizer = q_max;
-        c.rc_target_bitrate = AomEncoder::bitrate(cfg.width as _, cfg.height as _, cfg.quality);
-        c.rc_undershoot_pct = 50;
-        c.rc_overshoot_pct = 50;
-        c.rc_buf_initial_sz = 600;
-        c.rc_buf_optimal_sz = 600;
-        c.rc_buf_sz = 1000;
-        c.g_usage = kUsageProfile;
-        c.g_error_resilient = 0;
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
         // Low-latency settings.
-        c.rc_end_usage = aom_rc_mode::AOM_CBR; // Constant Bit Rate (CBR) mode
-        c.g_pass = aom_enc_pass::AOM_RC_ONE_PASS; // One-pass rate control
-        c.g_lag_in_frames = kLagInFrames; // No look ahead when lag equals 0.
+//
+//
+//
 
         // https://aomedia.googlesource.com/aom/+/refs/tags/v3.6.0/av1/common/enums.h#82
-        c.g_profile = if i444 { 1 } else { 0 };
+//
 
         Ok(c)
     }
@@ -277,17 +277,17 @@ impl EncoderApi for AomEncoder {
     }
 
     fn set_quality(&mut self, ratio: f32) -> ResultType<()> {
-        let mut c = unsafe { *self.ctx.config.enc.to_owned() };
+let mut c = ();
         let (q_min, q_max) = Self::calc_q_values(ratio);
-        c.rc_min_quantizer = q_min;
-        c.rc_max_quantizer = q_max;
-        c.rc_target_bitrate = Self::bitrate(self.width as _, self.height as _, ratio);
+//
+//
+//
         call_aom!(aom_codec_enc_config_set(&mut self.ctx, &c));
         Ok(())
     }
 
     fn bitrate(&self) -> u32 {
-        let c = unsafe { *self.ctx.config.enc.to_owned() };
+let mut c = ();
         c.rc_target_bitrate
     }
 
@@ -599,3 +599,4 @@ impl Drop for Image {
 }
 
 unsafe impl Send for aom_codec_ctx_t {}
+

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/ffi.dart';
+import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:get/get.dart';
 
 class CompanyChatDialog extends StatefulWidget {
@@ -19,7 +20,7 @@ class _CompanyChatDialogState extends State<CompanyChatDialog> {
     super.initState();
     // Listen for incoming chat messages via global event channel.
     // In Rust, we push events named "company_chat".
-    gFFI.dialogManager.setChatHandler((event) {
+    platformFFI.registerEventHandler('company_chat', 'company_chat_dialog', (event) async {
       if (mounted) {
         setState(() {
           _messages.add(event);
@@ -27,6 +28,12 @@ class _CompanyChatDialogState extends State<CompanyChatDialog> {
         _scrollToBottom();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    platformFFI.unregisterEventHandler('company_chat', 'company_chat_dialog');
+    super.dispose();
   }
 
   void _scrollToBottom() {

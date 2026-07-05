@@ -114,8 +114,8 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
 
 Future<void> checkCompanyRegistration() async {
   // Lấy config
-  final seatId = await bind.mainGetLocalOption(key: 'P204_SeatID');
-  final token = await bind.mainGetLocalOption(key: 'P204_Token');
+  final seatId = bind.mainGetLocalOption(key: 'P204_SeatID');
+  final token = bind.mainGetLocalOption(key: 'P204_Token');
   
   if (seatId.isEmpty || token.isEmpty) {
     // Show registration dialog
