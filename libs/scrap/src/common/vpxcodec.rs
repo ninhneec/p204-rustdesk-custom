@@ -63,29 +63,29 @@ impl EncoderApi for VpxEncoder {
                 // default: c.rc_min_quantizer = 0, c.rc_max_quantizer = 63
                 // try rc_resize_allowed later
 
-//
-//
+                c.g_w = config.width;
+                c.g_h = config.height;
                 c.g_timebase.num = 1;
                 c.g_timebase.den = 1000; // Output timestamp precision
-//
+                c.rc_undershoot_pct = 95;
                 // When the data buffer falls below this percentage of fullness, a dropped frame is indicated. Set the threshold to zero (0) to disable this feature.
                 // In dynamic scenes, low bitrate gets low fps while high bitrate gets high fps.
-//
-//
-//
+                c.rc_dropframe_thresh = 25;
+                c.g_threads = codec_thread_num(64) as _;
+                c.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT;
                 // https://developers.google.com/media/vp9/bitrate-modes/
                 // Constant Bitrate mode (CBR) is recommended for live streaming with VP9.
-//
+                c.rc_end_usage = vpx_rc_mode::VPX_CBR;
                 if let Some(keyframe_interval) = config.keyframe_interval {
-//
-//
+                    c.kf_min_dist = 0;
+                    c.kf_max_dist = keyframe_interval as _;
                 } else {
-//
+                    c.kf_mode = vpx_kf_mode::VPX_KF_DISABLED; // reduce bandwidth a lot
                 }
 
                 let (q_min, q_max) = Self::calc_q_values(config.quality);
-//
-//
+                c.rc_min_quantizer = q_min;
+                c.rc_max_quantizer = q_max;
                 c.rc_target_bitrate =
                     Self::bitrate(config.width as _, config.height as _, config.quality);
                 // https://chromium.googlesource.com/webm/libvpx/+/refs/heads/main/vp9/common/vp9_enums.h#29
@@ -201,17 +201,17 @@ impl EncoderApi for VpxEncoder {
     }
 
     fn set_quality(&mut self, ratio: f32) -> ResultType<()> {
-let mut c = ();
+        let mut c = unsafe { *self.ctx.config.enc.to_owned() };
         let (q_min, q_max) = Self::calc_q_values(ratio);
-//
-//
-//
+        c.rc_min_quantizer = q_min;
+        c.rc_max_quantizer = q_max;
+        c.rc_target_bitrate = Self::bitrate(self.width as _, self.height as _, ratio);
         call_vpx!(vpx_codec_enc_config_set(&mut self.ctx, &c));
         Ok(())
     }
 
     fn bitrate(&self) -> u32 {
-let mut c = ();
+        let c = unsafe { *self.ctx.config.enc.to_owned() };
         c.rc_target_bitrate
     }
 
@@ -595,4 +595,3 @@ impl Drop for Image {
 }
 
 unsafe impl Send for vpx_codec_ctx_t {}
-
