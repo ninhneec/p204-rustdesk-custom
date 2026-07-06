@@ -5,6 +5,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const app = express();
 const httpServer = createServer(app);
@@ -20,6 +21,8 @@ app.use(cors());
 app.use(express.json());
 // Serve static dashboard
 app.use(express.static(path.join(__dirname, '../dashboard')));
+
+const DB_FILE = path.join(__dirname, 'p204_data.json');
 
 // In-memory Database mock to avoid native module compilation errors on Windows
 const db = {
@@ -68,6 +71,14 @@ const db = {
         } else if (sql.includes('INSERT INTO chat_messages')) {
           db.chat_messages.push({ id: db.msgIdCounter++, sender: args[0], message: args[1], timestamp: new Date().toISOString() });
         }
+        
+        // Auto-save to JSON after any mutation
+        try {
+          fs.writeFileSync(DB_FILE, JSON.stringify({
+            keys: db.keys, machines: db.machines, chat_messages: db.chat_messages,
+            keyIdCounter: db.keyIdCounter, msgIdCounter: db.msgIdCounter
+          }, null, 2));
+        } catch(e) {}
       },
       get: function(param) {
         if (sql.includes('token_key = ?')) return db.keys.find(x => x.token_key === param);
@@ -86,6 +97,20 @@ const db = {
 
 const JWT_SECRET = 'P204_JWT_SECRET_2026';
 const ADMIN_PASS = 'Boss@2026';
+
+// Load Database at startup
+if (fs.existsSync(DB_FILE)) {
+  try {
+    const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    db.keys = data.keys || [];
+    db.machines = data.machines || [];
+    // Reset all machines to offline on startup
+    db.machines.forEach(m => { m.status = 'offline'; m.socket_id = null; });
+    db.chat_messages = data.chat_messages || [];
+    db.keyIdCounter = data.keyIdCounter || 1;
+    db.msgIdCounter = data.msgIdCounter || 1;
+  } catch(e) { console.log('Lỗi đọc database file', e); }
+}
 
 // Khởi tạo server báo console
 console.log('🚀 P204 Server đang khởi động...');
