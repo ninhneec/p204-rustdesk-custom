@@ -3,19 +3,19 @@ use std::sync::Mutex;
 use serde_derive::{Deserialize, Serialize};
 
 lazy_static! {
-    static ref CLOUD_CONFIG: Mutex<Option<CloudConfigData>> = Mutex::new(None);
+    pub static ref CLOUD_CONFIG: Mutex<Option<CloudConfigData>> = Mutex::new(None);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CloudConfigData {
     #[serde(default)]
-    pub rendezvous_server: String,
+    pub rendezvous_server: Option<String>,
     #[serde(default)]
-    pub api_server: String,
+    pub api_server: Option<String>,
     #[serde(default)]
-    pub ws_server: String,
+    pub ws_server: Option<String>,
     #[serde(default)]
-    pub public_key: String,
+    pub public_key: Option<String>,
 }
 
 // URLs để fetch cloud config
@@ -24,15 +24,10 @@ const CLOUD_CONFIG_URLS: &[&str] = &[
 ];
 
 impl CloudConfigData {
-    /// Lấy bản sao của cloud config hiện tại
-    pub fn get() -> Option<CloudConfigData> {
-        CLOUD_CONFIG.lock().ok()?.clone()
-    }
-
     /// Kiểm tra xem cloud config đã được tải thành công chưa
     pub fn is_loaded() -> bool {
         CLOUD_CONFIG.lock().ok().map(|c| {
-            c.as_ref().map(|d| !d.api_server.is_empty()).unwrap_or(false)
+            c.as_ref().map(|d| d.api_server.is_some()).unwrap_or(false)
         }).unwrap_or(false)
     }
 
@@ -40,11 +35,11 @@ impl CloudConfigData {
     pub fn get_ws_url() -> String {
         let cfg = CLOUD_CONFIG.lock().ok().and_then(|c| c.clone());
         match cfg {
-            Some(ref c) if !c.ws_server.is_empty() => {
-                format!("{}/socket.io/?EIO=4&transport=websocket", c.ws_server.trim_end_matches('/'))
+            Some(ref c) if c.ws_server.as_ref().map(|s| !s.is_empty()).unwrap_or(false) => {
+                format!("{}/socket.io/?EIO=4&transport=websocket", c.ws_server.as_ref().unwrap().trim_end_matches('/'))
             }
-            Some(ref c) if !c.api_server.is_empty() => {
-                let base = c.api_server
+            Some(ref c) if c.api_server.as_ref().map(|s| !s.is_empty()).unwrap_or(false) => {
+                let base = c.api_server.as_ref().unwrap()
                     .replace("https://", "wss://")
                     .replace("http://", "ws://");
                 format!("{}/socket.io/?EIO=4&transport=websocket", base.trim_end_matches('/'))
@@ -57,7 +52,7 @@ impl CloudConfigData {
     pub fn get_api_url(path: &str) -> String {
         let base = CLOUD_CONFIG.lock().ok()
             .and_then(|c| c.clone())
-            .and_then(|c| if c.api_server.is_empty() { None } else { Some(c.api_server) })
+            .and_then(|c| c.api_server)
             .unwrap_or_else(|| "http://127.0.0.1:3000".to_string());
         format!("{}{}", base.trim_end_matches('/'), path)
     }
@@ -66,7 +61,7 @@ impl CloudConfigData {
     pub fn get_rendezvous_server() -> String {
         CLOUD_CONFIG.lock().ok()
             .and_then(|c| c.clone())
-            .and_then(|c| if c.rendezvous_server.is_empty() { None } else { Some(c.rendezvous_server) })
+            .and_then(|c| c.rendezvous_server)
             .unwrap_or_default()
     }
 
@@ -74,7 +69,7 @@ impl CloudConfigData {
     pub fn get_public_key() -> String {
         CLOUD_CONFIG.lock().ok()
             .and_then(|c| c.clone())
-            .and_then(|c| if c.public_key.is_empty() { None } else { Some(c.public_key) })
+            .and_then(|c| c.public_key)
             .unwrap_or_default()
     }
 }
