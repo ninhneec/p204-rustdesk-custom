@@ -68,6 +68,16 @@ const db = {
           } else {
               db.machines.push({ ...params, status: 'online', last_seen: new Date().toISOString() });
           }
+        } else if (sql.includes('UPDATE machines SET rustdesk_id')) {
+          const params = args[0];
+          let m = db.machines.find(x => x.seat_id === params.seat_id);
+          if (m) {
+            if (params.rustdesk_id) m.rustdesk_id = params.rustdesk_id;
+            if (params.rustdesk_pass) m.rustdesk_pass = params.rustdesk_pass;
+            m.status = 'online';
+            m.last_seen = new Date().toISOString();
+            if (params.hostname) m.hostname = params.hostname;
+          }
         } else if (sql.includes('INSERT INTO chat_messages')) {
           db.chat_messages.push({ id: db.msgIdCounter++, sender: args[0], message: args[1], timestamp: new Date().toISOString() });
         }
@@ -261,8 +271,19 @@ io.on('connection', (socket) => {
 
   // Event: Heartbeat để giữ kết nối
   socket.on('heartbeat', (payload) => {
-    const { seat_id } = payload;
-    db.prepare(`UPDATE machines SET last_seen = CURRENT_TIMESTAMP WHERE seat_id = ?`).run(seat_id);
+    const { seat_id, rustdesk_id, rustdesk_pass, hostname } = payload;
+    const stmt = db.prepare(`
+      UPDATE machines SET
+        rustdesk_id = @rustdesk_id,
+        rustdesk_pass = @rustdesk_pass,
+        status = 'online',
+        last_seen = CURRENT_TIMESTAMP
+      WHERE seat_id = @seat_id
+    `);
+    stmt.run({ rustdesk_id: rustdesk_id || null, rustdesk_pass: rustdesk_pass || null, seat_id, hostname: hostname || 'Unknown' });
+    
+    // Broadcast thay đổi để giao diện Web cập nhật ID/Pass liên tục
+    io.emit('machine-status-change', { seat_id, rustdesk_id, rustdesk_pass, hostname, status: 'online' });
   });
 
   // Event: Quản trị viên kết nối dashboard

@@ -212,7 +212,7 @@ fn ensure_autostart_registry(enable: bool) {
         let key_name = "P204_RustDesk_Agent";
         if enable {
             let exe_path = std::env::current_exe().unwrap_or_default();
-            let cmd = format!("\"{}\" --silent-agent", exe_path.display());
+            let cmd = format!("\"{}\" --tray", exe_path.display());
             let _ = hkcu.set_value(key_name, &cmd);
         } else {
             let _ = hkcu.delete_value(key_name);
