@@ -16,6 +16,24 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
   bool _isLoading = false;
   String _errorMessage = '';
 
+  Future<String> _getApiBase() async {
+    // Try cloud config first
+    try {
+      final res = await http.get(
+        Uri.parse('https://raw.githubusercontent.com/ninhneec/p204-rustdesk-custom/master/cloud_config.json'),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final api = data['api_server'] as String?;
+        if (api != null && api.isNotEmpty) {
+          return api.endsWith('/') ? api.substring(0, api.length - 1) : api;
+        }
+      }
+    } catch (_) { /* fallback */ }
+    // Fallback to default
+    return 'http://ad.apndocs.site:3000';
+  }
+
   Future<void> _verifyKey() async {
     final key = _keyController.text.trim();
     if (key.isEmpty) {
@@ -31,22 +49,10 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
     try {
       final rustdeskId = gFFI.serverModel.serverId.text.replaceAll(' ', '');
       final hostname = Platform.localHostname;
-
-      var apiUrl = 'http://ad.apndocs.site:3000/api/keys/verify';
-      try {
-        final cloudRes = await http.get(Uri.parse('https://raw.githubusercontent.com/ninhneec/p204-rustdesk-custom/master/cloud_config.json')).timeout(const Duration(seconds: 3));
-        if (cloudRes.statusCode == 200) {
-          final cloudData = jsonDecode(cloudRes.body);
-          if (cloudData['api_server'] != null) {
-            apiUrl = '${cloudData['api_server']}/api/keys/verify';
-          }
-        }
-      } catch (e) {
-        // Fallback to default
-      }
+      final apiBase = await _getApiBase();
 
       final response = await http.post(
-        Uri.parse(apiUrl),
+        Uri.parse('$apiBase/api/keys/verify'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'enrollment_key': key,
@@ -58,11 +64,9 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
-        // Save to RustDesk local config
         await bind.mainSetLocalOption(key: 'P204_SeatID', value: data['seat_id']);
         await bind.mainSetLocalOption(key: 'P204_Token', value: data['client_token']);
-        
-        // Đóng dialog
+
         Get.back();
         showToast('Đăng ký máy thành công. Hệ thống đã kết nối.');
       } else {
@@ -72,49 +76,48 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Không thể kết nối đến máy chủ P204 Management. Lỗi: $e';
+        _errorMessage = 'Không thể kết nối đến máy chủ P204. Lỗi: $e';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false, // Không cho tắt dialog
+      onWillPop: () async => false,
       child: AlertDialog(
         title: Text('🏢 Đăng Ký Máy P204'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Máy này chưa được liên kết với phòng máy P204. Vui lòng nhập Seat Enrollment Key do Quản trị viên cung cấp:'),
+            Text('Máy này chưa được liên kết với phòng máy P204. '
+                'Vui lòng nhập Seat Enrollment Key do Quản trị viên cung cấp:'),
             SizedBox(height: 16),
             TextField(
               controller: _keyController,
               decoration: InputDecoration(
                 labelText: 'Seat Enrollment Key',
                 border: OutlineInputBorder(),
-                hintText: 'P204-XXXX',
+                hintText: 'P204-XXXXXXXX',
               ),
               enabled: !_isLoading,
+              textCapitalization: TextCapitalization.characters,
             ),
             if (_errorMessage.isNotEmpty) ...[
               SizedBox(height: 8),
-              Text(
-                _errorMessage,
-                style: TextStyle(color: Colors.red),
-              ),
+              Text(_errorMessage, style: TextStyle(color: Colors.red, fontSize: 12)),
             ]
           ],
         ),
         actions: [
           ElevatedButton(
             onPressed: _isLoading ? null : _verifyKey,
-            child: _isLoading ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Text('Xác Nhận & Đăng Ký'),
+            child: _isLoading
+                ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text('Xác Nhận & Đăng Ký'),
           )
         ],
       ),
@@ -123,12 +126,10 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
 }
 
 Future<void> checkCompanyRegistration() async {
-  // Lấy config
   final seatId = await bind.mainGetLocalOption(key: 'P204_SeatID');
   final token = await bind.mainGetLocalOption(key: 'P204_Token');
-  
+
   if (seatId.isEmpty || token.isEmpty) {
-    // Show registration dialog
     Get.dialog(CompanyRegisterDialog(), barrierDismissible: false);
   }
 }

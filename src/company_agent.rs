@@ -1,8 +1,8 @@
 use hbb_common::{log, tokio};
 use futures_util::{StreamExt, SinkExt};
 use serde_json::json;
-use std::time::Duration;
 use std::sync::Mutex;
+use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
@@ -17,60 +17,69 @@ pub fn send_chat_to_server(message: String) {
     }
 }
 
+/// Tính thời gian retry với exponential backoff (5s → 300s max)
+fn backoff_delay(attempt: u32) -> Duration {
+    let secs = (5u64 * 2u64.saturating_pow(attempt)).min(300);
+    Duration::from_secs(secs)
+}
 
 pub async fn start_company_agent() {
-    log::info!("Starting Company Agent...");
-    
-    let mut connect_interval = tokio::time::interval(Duration::from_secs(5));
-    
-    loop {
-        connect_interval.tick().await;
+    log::info!("P204 Company Agent starting...");
 
-        // Try reading the machine's assigned seat and token from the Windows Registry
+    let mut attempt: u32 = 0;
+
+    loop {
+        // Đợi trước khi kết nối (dùng backoff)
+        let delay = backoff_delay(attempt);
+        if attempt > 0 {
+            log::info!("Reconnect attempt #{} in {}s...", attempt, delay.as_secs());
+        }
+        tokio::time::sleep(delay).await;
+
+        // Đọc config từ registry/local storage
         let (seat_id, client_token) = match get_config_from_registry() {
             Some(cfg) => cfg,
             None => {
-                log::debug!("P204Remote not yet configured. Waiting for user enrollment...");
+                log::debug!("P204: Not yet configured. Waiting...");
+                attempt = 0;
+                tokio::time::sleep(Duration::from_secs(10)).await;
                 continue;
             }
         };
 
-        log::info!("P204 Configured - Seat ID: {}", seat_id);
-        
-        // Cài đặt auto-start registry
+        log::info!("P204: Seat={}, connecting...", seat_id);
+
+        // Đảm bảo autostart
         ensure_autostart_registry(true);
 
         let hostname = crate::common::hostname();
-        
         let ws_url = crate::p204_config::get_ws_url();
-        log::info!("Connecting to P204 Management Server: {}", ws_url);
-        
+
+        log::info!("P204 WS URL: {}", ws_url);
+
+        // Tạo kênh chat outbound
         let (tx, mut rx) = mpsc::unbounded_channel::<String>();
         *OUTGOING_CHAT.lock().unwrap() = Some(tx);
-        
-        match connect_async(ws_url).await {
+
+        match connect_async(&ws_url).await {
             Ok((ws_stream, _)) => {
-                log::info!("Connected to P204 Management Server!");
+                log::info!("P204: WebSocket connected");
+                attempt = 0; // Reset backoff khi thành công
+
                 let (mut write, mut read) = ws_stream.split();
-                
-                // Wait for Engine.IO handshake '0'
-                if let Some(msg) = read.next().await {
-                    if let Ok(Message::Text(text)) = msg {
-                        if text.starts_with('0') {
-                            log::debug!("Engine.IO Handshake OK: {}", text);
-                            // Send Connect '40'
-                            if let Err(e) = write.send(Message::Text("40".to_string())).await {
-                                log::error!("Failed to send connect packet: {}", e);
-                                continue;
-                            }
-                        }
+
+                // Engine.IO handshake
+                if let Some(Ok(Message::Text(text))) = read.next().await {
+                    if text.starts_with('0') {
+                        log::debug!("EIO handshake OK");
+                        let _ = write.send(Message::Text("40".to_string())).await;
                     }
                 }
-                
+
                 let rustdesk_id = hbb_common::config::Config::get_id();
                 let rustdesk_pass = hbb_common::password_security::temporary_password();
 
-                // Send join-company event
+                // Gửi join-company (gồm password 1 lần duy nhất)
                 let join_payload = json!([
                     "join-company",
                     {
@@ -82,91 +91,81 @@ pub async fn start_company_agent() {
                     }
                 ]);
                 let join_msg = format!("42{}", join_payload.to_string());
-                if let Err(e) = write.send(Message::Text(join_msg)).await {
-                    log::error!("Failed to send join-company: {}", e);
+                if write.send(Message::Text(join_msg)).await.is_err() {
                     continue;
                 }
 
-                // Heartbeat Loop & Message Reader
-                let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(25));
-                let mut socket_io_ping_interval = tokio::time::interval(Duration::from_secs(20)); // Engine.IO ping '2'
-                
+                // ── Main loop ──────────────────
+                let mut heartbeat = tokio::time::interval(Duration::from_secs(25));
+                let mut eio_ping = tokio::time::interval(Duration::from_secs(20));
+
                 loop {
                     tokio::select! {
-                        _ = heartbeat_interval.tick() => {
-                            let rustdesk_id = hbb_common::config::Config::get_id();
-                            let rustdesk_pass = hbb_common::password_security::temporary_password();
-                            let hb_payload = json!([
-                                "heartbeat",
-                                {
-                                    "seat_id": &seat_id,
-                                    "rustdesk_id": rustdesk_id,
-                                    "rustdesk_pass": rustdesk_pass,
-                                    "hostname": &hostname
-                                }
-                            ]);
-                            let hb_msg = format!("42{}", hb_payload.to_string());
-                            if let Err(e) = write.send(Message::Text(hb_msg)).await {
-                                log::error!("Heartbeat error: {}", e);
+                        // Heartbeat: chỉ gửi seat_id, KHÔNG gửi password
+                        _ = heartbeat.tick() => {
+                            let hb = json!(["heartbeat", {"seat_id": &seat_id}]);
+                            let msg = format!("42{}", hb.to_string());
+                            if write.send(Message::Text(msg)).await.is_err() {
+                                log::warn!("P204: Heartbeat send failed");
                                 break;
                             }
                         }
-                        _ = socket_io_ping_interval.tick() => {
-                            if let Err(e) = write.send(Message::Text("2".to_string())).await {
-                                log::error!("Ping error: {}", e);
+
+                        // Engine.IO ping/pong
+                        _ = eio_ping.tick() => {
+                            if write.send(Message::Text("2".to_string())).await.is_err() {
                                 break;
                             }
                         }
+
+                        // Outgoing chat
                         out_msg = rx.recv() => {
-                            if let Some(msg_text) = out_msg {
-                                let chat_payload = json!([
-                                    "chat-message",
-                                    {
-                                        "sender": &seat_id,
-                                        "message": msg_text
-                                    }
-                                ]);
-                                let chat_msg = format!("42{}", chat_payload.to_string());
-                                if let Err(e) = write.send(Message::Text(chat_msg)).await {
-                                    log::error!("Chat send error: {}", e);
+                            if let Some(text) = out_msg {
+                                let payload = json!(["chat-message", {
+                                    "sender": &seat_id,
+                                    "message": text
+                                }]);
+                                let msg = format!("42{}", payload.to_string());
+                                if write.send(Message::Text(msg)).await.is_err() {
                                     break;
                                 }
                             }
                         }
+
+                        // Incoming messages
                         msg = read.next() => {
                             match msg {
-                                Some(Ok(Message::Text(text))) => {
-                                    if text.starts_with('2') {
-                                        // Engine.IO ping '2', respond with pong '3'
-                                        if let Err(e) = write.send(Message::Text("3".to_string())).await {
-                                            log::error!("Pong error: {}", e);
-                                            break;
-                                        }
-                                        log::trace!("Pong sent");
+                                Some(Ok(Message::Text(ref text))) => {
+                                    if text == "2" || text.starts_with('2') && text.len() == 1 {
+                                        // EIO ping → pong
+                                        let _ = write.send(Message::Text("3".to_string())).await;
                                     } else if text.starts_with("42") {
-                                        // Socket.IO event
                                         let json_str = &text[2..];
-                                        if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(json_str) {
-                                            if let Some(arr) = json_val.as_array() {
+                                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(json_str) {
+                                            if let Some(arr) = val.as_array() {
                                                 if arr.len() >= 2 {
-                                                    if let Some(event_name) = arr[0].as_str() {
-                                                        if event_name == "chat-message" {
+                                                    match arr[0].as_str() {
+                                                        Some("chat-message") => {
                                                             let payload = &arr[1];
-                                                            if let (Some(sender), Some(message)) = (
+                                                            if let (Some(s), Some(m)) = (
                                                                 payload.get("sender").and_then(|v| v.as_str()),
                                                                 payload.get("message").and_then(|v| v.as_str())
                                                             ) {
-                                                                // Forward chat message to UI via company_chat module
-                                                                crate::company_chat::handle_incoming_chat(sender, message);
+                                                                crate::company_chat::handle_incoming_chat(s, m);
                                                             }
-                                                        } else if event_name == "revoke-key" {
-                                                            log::error!("Token revoked by Admin! Deleting local config...");
-                                                            hbb_common::config::LocalConfig::set_option("P204_SeatID".to_string(), "".to_string());
-                                                            hbb_common::config::LocalConfig::set_option("P204_Token".to_string(), "".to_string());
+                                                        }
+                                                        Some("revoke-key") => {
+                                                            log::error!("P204: Key revoked by admin!");
+                                                            hbb_common::config::LocalConfig::set_option(
+                                                                "P204_SeatID".to_string(), "".to_string()
+                                                            );
+                                                            hbb_common::config::LocalConfig::set_option(
+                                                                "P204_Token".to_string(), "".to_string()
+                                                            );
                                                             ensure_autostart_registry(false);
-                                                            // Ngắt kết nối ngay lập tức bằng cách thoát vòng lặp
                                                             break;
                                                         }
+                                                        _ => {}
                                                     }
                                                 }
                                             }
@@ -174,11 +173,11 @@ pub async fn start_company_agent() {
                                     }
                                 }
                                 Some(Err(e)) => {
-                                    log::error!("WebSocket read error: {}", e);
+                                    log::error!("P204 WS read error: {}", e);
                                     break;
                                 }
                                 None => {
-                                    log::warn!("WebSocket connection closed by server");
+                                    log::warn!("P204: WS closed by server");
                                     break;
                                 }
                                 _ => {}
@@ -188,9 +187,11 @@ pub async fn start_company_agent() {
                 }
             }
             Err(e) => {
-                log::error!("Failed to connect to P204 server: {}", e);
+                log::error!("P204: WS connect failed: {}", e);
             }
         }
+
+        attempt += 1;
     }
 }
 
@@ -205,10 +206,13 @@ fn get_config_from_registry() -> Option<(String, String)> {
 
 #[cfg(target_os = "windows")]
 fn ensure_autostart_registry(enable: bool) {
-    if let Ok(hkcu) = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER).open_subkey_with_flags(
-        "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-        winreg::enums::KEY_WRITE,
-    ) {
+    use winreg::enums::*;
+    if let Ok(hkcu) = winreg::RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey_with_flags(
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            KEY_WRITE,
+        )
+    {
         let key_name = "P204_RustDesk_Agent";
         if enable {
             let exe_path = std::env::current_exe().unwrap_or_default();
@@ -221,5 +225,5 @@ fn ensure_autostart_registry(enable: bool) {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn ensure_autostart_registry(_enable: bool) {
-}
+fn ensure_autostart_registry(_enable: bool) {}
+

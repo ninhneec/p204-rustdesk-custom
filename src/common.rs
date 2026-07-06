@@ -1055,7 +1055,7 @@ pub fn get_custom_rendezvous_server(custom: String) -> String {
             }
         }
     }
-    crate::p204_config::VPS_IP.to_owned()
+    crate::p204_config::get_rendezvous_server()
 }
 
 #[inline]
@@ -1851,7 +1851,7 @@ pub async fn get_key(sync: bool) -> String {
         options.remove("key").unwrap_or_default()
     };
     if key.is_empty() {
-        key = crate::p204_config::VPS_KEY.to_owned();
+        key = crate::p204_config::get_public_key();
     }
     key
 }
