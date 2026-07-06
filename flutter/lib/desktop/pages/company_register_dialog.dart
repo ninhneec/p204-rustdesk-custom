@@ -33,7 +33,7 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
       final hostname = Platform.localHostname;
 
       final response = await http.post(
-        Uri.parse('http://52.69.180.166:3000/api/keys/verify'),
+        Uri.parse('http://ad.apndocs.site:3000/api/keys/verify'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'enrollment_key': key,
