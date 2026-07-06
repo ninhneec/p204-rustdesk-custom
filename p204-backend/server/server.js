@@ -57,7 +57,16 @@ const db = {
         } else if (sql.includes('UPDATE machines SET socket_id')) {
           const params = args[0];
           let m = db.machines.find(x => x.seat_id === params.seat_id);
-          if (m) { m.socket_id = params.socket_id; m.status = params.status; m.last_seen = new Date().toISOString(); }
+          if (m) { 
+              m.socket_id = params.socket_id; 
+              m.status = params.status; 
+              if (params.hostname) m.hostname = params.hostname;
+              m.last_seen = new Date().toISOString(); 
+          } else {
+              db.machines.push({ ...params, status: 'online', last_seen: new Date().toISOString() });
+          }
+        } else if (sql.includes('INSERT INTO chat_messages')) {
+          db.chat_messages.push({ id: db.msgIdCounter++, sender: args[0], message: args[1], timestamp: new Date().toISOString() });
         }
       },
       get: function(param) {
@@ -68,6 +77,7 @@ const db = {
       all: function() {
         if (sql.includes('FROM machines')) return db.machines;
         if (sql.includes('FROM keys')) return db.keys.slice().reverse();
+        if (sql.includes('FROM chat_messages')) return db.chat_messages;
         return [];
       }
     };
@@ -212,7 +222,7 @@ io.on('connection', (socket) => {
         last_seen = CURRENT_TIMESTAMP
       WHERE seat_id = @seat_id AND rustdesk_id = @rustdesk_id
     `);
-    stmt.run({ socket_id: socket.id, rustdesk_pass: payload.rustdesk_pass || null, seat_id, rustdesk_id });
+    stmt.run({ socket_id: socket.id, rustdesk_pass: payload.rustdesk_pass || null, seat_id, rustdesk_id, hostname: hostname || 'Unknown' });
 
     console.log(`✅ Máy ${seat_id} (${hostname}) đã online.`);
 
