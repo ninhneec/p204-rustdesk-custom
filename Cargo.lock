@@ -1312,18 +1312,18 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.4"
+version = "4.5.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bc066a67923782aa8515dbaea16946c5bcc5addbd668bb80af688e53e548a0"
+checksum = "4c26d721170e0295f191a69bd9a1f93efcdb0aff38684b61ab5750468972e5f5"
 dependencies = [
  "clap_builder",
 ]
 
 [[package]]
 name = "clap_builder"
-version = "4.5.2"
+version = "4.5.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae129e2e766ae0ec03484e609954119f123cc1fe650337e155d03b022f24f7b4"
+checksum = "75835f0c7bf681bfd05abe44e965760fea999a5286c6eb2d59883634fd02011a"
 dependencies = [
  "anstream 0.6.21",
  "anstyle",
@@ -3894,7 +3894,7 @@ dependencies = [
  "base64",
  "bytes",
  "chrono",
- "clap 4.5.4",
+ "clap 4.5.51",
  "confy",
  "default_net",
  "directories-next",
@@ -7807,7 +7807,7 @@ dependencies = [
  "cfg-if 1.0.4",
  "chrono",
  "cidr-utils",
- "clap 4.5.4",
+ "clap 4.5.51",
  "clipboard",
  "clipboard-master",
  "cocoa 0.24.1",
