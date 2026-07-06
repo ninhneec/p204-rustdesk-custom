@@ -111,6 +111,12 @@ pub async fn start_company_agent() {
                                 break;
                             }
                         }
+                        _ = socket_io_ping_interval.tick() => {
+                            if let Err(e) = write.send(Message::Text("2".to_string())).await {
+                                log::error!("Ping error: {}", e);
+                                break;
+                            }
+                        }
                         out_msg = rx.recv() => {
                             if let Some(msg_text) = out_msg {
                                 let chat_payload = json!([
