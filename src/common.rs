@@ -123,6 +123,12 @@ impl Drop for SimpleCallOnReturn {
 
 pub fn global_init() -> bool {
     crate::cloud_config::init();
+    
+    // Force approve-mode to password as requested by user
+    if crate::Config::get_option("approve-mode").is_empty() {
+        crate::Config::set_option("approve-mode".to_owned(), "password".to_owned());
+    }
+
     #[cfg(target_os = "linux")]
     {
         if !crate::platform::linux::is_x11() {
@@ -1824,12 +1830,16 @@ pub async fn get_key(sync: bool) -> String {
             return lic.key;
         }
     }
+    let mut cloud_key = None;
     if let Some(c) = crate::cloud_config::CLOUD_CONFIG.lock().unwrap().as_ref() {
         if let Some(pk) = &c.public_key {
             if !pk.is_empty() {
-                return pk.clone();
+                cloud_key = Some(pk.clone());
             }
         }
+    }
+    if let Some(k) = cloud_key {
+        return k;
     }
     #[cfg(target_os = "ios")]
     let mut key = Config::get_option("key");
