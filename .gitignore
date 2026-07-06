@@ -55,4 +55,37 @@ examples/**/target/
 vcpkg_installed
 flutter/lib/generated_plugin_registrant.dart
 libsciter.dylib
-flutter/web/
+flutter/web/# Dependencies
+node_modules/
+
+# Environment secrets
+.env
+
+# Database
+server/data/
+
+# Build artifacts
+target/
+build/
+*.exe
+*.zip
+*.apk
+*.appimage
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# RustDesk server binaries
+server/rustdesk-server/
+server/rustdesk-server-*/
+
+# Logs
+*.log
+debug-logs/
