@@ -186,7 +186,7 @@ html = """<!DOCTYPE html>
             </div>
 
             <!-- Map & Chat Row -->
-            <div id="mapTab" class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px]">
+            <div id="mapTab" class="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[750px] lg:min-h-[850px]">
                 
                 <!-- Room Map (Giãn cách rộng rãi, 2 columns span) -->
                 <div class="lg:col-span-2 crm-card flex flex-col relative overflow-hidden">
@@ -199,8 +199,8 @@ html = """<!DOCTYPE html>
                         </div>
                     </div>
                     
-                    <div id="mapContainer" class="flex-1 bg-bgLight rounded-2xl border border-gray-100 overflow-auto cursor-grab p-12 relative flex justify-center items-center select-none">
-                        <div id="mapWrapper" class="relative transition-transform duration-200 origin-center flex space-x-20">
+                    <div id="mapContainer" class="flex-1 bg-bgLight rounded-2xl border border-gray-100 overflow-auto cursor-grab p-12 relative flex justify-center select-none">
+                        <div id="mapWrapper" class="relative transition-transform duration-200 origin-center flex space-x-20 pt-32 pb-20 px-8">
                             
                             <!-- Bàn học -->
                             <div id="deskGrid" class="flex flex-col space-y-12 divide-y-2 divide-dashed divide-gray-200">
