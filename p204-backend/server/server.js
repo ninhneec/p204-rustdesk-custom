@@ -128,6 +128,10 @@ if (fs.existsSync(DB_FILE)) {
 console.log('🚀 P204 Server đang khởi động...');
 
 // REST Endpoints
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dashboard/dashboard.html'));
+});
+
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username === 'admin' && password === ADMIN_PASS) {
