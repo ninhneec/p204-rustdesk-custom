@@ -77,6 +77,8 @@ const db = {
             m.status = 'online';
             m.last_seen = new Date().toISOString();
             if (params.hostname) m.hostname = params.hostname;
+          } else {
+            db.machines.push({ ...params, status: 'online', last_seen: new Date().toISOString() });
           }
         } else if (sql.includes('INSERT INTO chat_messages')) {
           db.chat_messages.push({ id: db.msgIdCounter++, sender: args[0], message: args[1], timestamp: new Date().toISOString() });
