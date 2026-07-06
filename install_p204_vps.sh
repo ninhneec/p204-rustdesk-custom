@@ -45,7 +45,7 @@ if [ "$(uname -m)" = "aarch64" ]; then ARCH="linux-arm64"; fi
 
 wget -q "https://github.com/rustdesk/rustdesk-server/releases/download/${RUSTDESK_VER}/rustdesk-server-${ARCH}.zip" -O rd.zip
 unzip -o rd.zip
-mv */hbb* . 2>/dev/null || true
+find . -type f \( -name "hbbs" -o -name "hbbr" \) -exec mv {} . \;
 chmod +x hbbs hbbr
 
 # Lấy public key tự động
