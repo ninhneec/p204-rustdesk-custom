@@ -32,8 +32,21 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
       final rustdeskId = gFFI.serverModel.serverId.text.replaceAll(' ', '');
       final hostname = Platform.localHostname;
 
+      var apiUrl = 'http://ad.apndocs.site:3000/api/keys/verify';
+      try {
+        final cloudRes = await http.get(Uri.parse('https://raw.githubusercontent.com/ninhneec/p204-rustdesk-custom/master/cloud_config.json')).timeout(const Duration(seconds: 3));
+        if (cloudRes.statusCode == 200) {
+          final cloudData = jsonDecode(cloudRes.body);
+          if (cloudData['api_server'] != null) {
+            apiUrl = '${cloudData['api_server']}/api/keys/verify';
+          }
+        }
+      } catch (e) {
+        // Fallback to default
+      }
+
       final response = await http.post(
-        Uri.parse('http://ad.apndocs.site:3000/api/keys/verify'),
+        Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'enrollment_key': key,

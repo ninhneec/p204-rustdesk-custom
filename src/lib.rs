@@ -23,6 +23,7 @@ pub mod company_agent;
 #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
 pub mod company_chat;
 pub mod common;
+pub mod cloud_config;
 pub mod p204_config;
 #[cfg(not(any(target_os = "ios")))]
 pub mod ipc;

@@ -122,6 +122,7 @@ impl Drop for SimpleCallOnReturn {
 }
 
 pub fn global_init() -> bool {
+    crate::cloud_config::init();
     #[cfg(target_os = "linux")]
     {
         if !crate::platform::linux::is_x11() {
@@ -1041,7 +1042,14 @@ pub fn get_custom_rendezvous_server(custom: String) -> String {
     if !config::PROD_RENDEZVOUS_SERVER.read().unwrap().is_empty() {
         return config::PROD_RENDEZVOUS_SERVER.read().unwrap().clone();
     }
-    "ad.apndocs.site".to_owned()
+    if let Some(c) = crate::cloud_config::CLOUD_CONFIG.lock().unwrap().as_ref() {
+        if let Some(srv) = &c.rendezvous_server {
+            if !srv.is_empty() {
+                return srv.clone();
+            }
+        }
+    }
+    crate::p204_config::VPS_IP.to_owned()
 }
 
 #[inline]
@@ -1071,6 +1079,13 @@ fn get_api_server_(api: String, custom: String) -> String {
     }
     if !api.is_empty() {
         return api.to_owned();
+    }
+    if let Some(c) = crate::cloud_config::CLOUD_CONFIG.lock().unwrap().as_ref() {
+        if let Some(api) = &c.api_server {
+            if !api.is_empty() {
+                return api.clone();
+            }
+        }
     }
     let s0 = get_custom_rendezvous_server(custom);
     if !s0.is_empty() {
@@ -1809,6 +1824,13 @@ pub async fn get_key(sync: bool) -> String {
             return lic.key;
         }
     }
+    if let Some(c) = crate::cloud_config::CLOUD_CONFIG.lock().unwrap().as_ref() {
+        if let Some(pk) = &c.public_key {
+            if !pk.is_empty() {
+                return pk.clone();
+            }
+        }
+    }
     #[cfg(target_os = "ios")]
     let mut key = Config::get_option("key");
     #[cfg(not(target_os = "ios"))]
@@ -1819,7 +1841,7 @@ pub async fn get_key(sync: bool) -> String {
         options.remove("key").unwrap_or_default()
     };
     if key.is_empty() {
-        key = config::RS_PUB_KEY.to_owned();
+        key = crate::p204_config::VPS_KEY.to_owned();
     }
     key
 }
