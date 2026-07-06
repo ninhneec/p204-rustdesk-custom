@@ -84,7 +84,7 @@ console.log('🚀 P204 Server đang khởi động...');
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username === 'admin' && password === ADMIN_PASS) {
-    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '30m' });
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ success: true, token });
   } else {
     res.status(401).json({ success: false, message: 'Sai tên đăng nhập hoặc mật khẩu' });
