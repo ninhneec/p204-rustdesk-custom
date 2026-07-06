@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CloudConfigData {
