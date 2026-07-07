@@ -125,8 +125,8 @@ pub fn global_init() -> bool {
     crate::cloud_config::init();
     
     // Force approve-mode to password as requested by user
-    if crate::Config::get_option("approve-mode").is_empty() {
-        crate::Config::set_option("approve-mode".to_owned(), "password".to_owned());
+    if Config::get_option("approve-mode").is_empty() {
+        Config::set_option("approve-mode".to_owned(), "password".to_owned());
     }
 
     #[cfg(target_os = "linux")]

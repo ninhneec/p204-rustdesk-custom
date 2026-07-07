@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 use serde_derive::{Deserialize, Serialize};
+use hbb_common::log;
 
 lazy_static! {
     pub static ref CLOUD_CONFIG: Mutex<Option<CloudConfigData>> = Mutex::new(None);
