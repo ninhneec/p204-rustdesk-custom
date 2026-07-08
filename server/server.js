@@ -90,6 +90,8 @@ const stmts = {
   machineFindBySeat: db.prepare("SELECT * FROM machines WHERE seat_id = ?"),
   machineAll: db.prepare("SELECT * FROM machines"),
   machineTouch: db.prepare("UPDATE machines SET last_seen = datetime('now', 'localtime') WHERE seat_id = ?"),
+  machineDelete: db.prepare("DELETE FROM machines WHERE seat_id = ?"),
+  machineDeleteByRustdeskId: db.prepare("DELETE FROM machines WHERE rustdesk_id = ?"),
 
   chatInsert: db.prepare("INSERT INTO chat_messages (sender, message) VALUES (?, ?)"),
   chatRecent: db.prepare("SELECT * FROM chat_messages ORDER BY id DESC LIMIT 200"),
@@ -177,6 +179,9 @@ app.post('/api/keys/verify', (req, res) => {
       return res.status(400).json({ success: false, message: 'Key không hợp lệ hoặc đã được sử dụng' });
     }
 
+    // Xóa máy tính cũ nếu nó đang chiếm ghế khác (tránh lỗi UNIQUE constraint)
+    stmts.machineDeleteByRustdeskId.run(rustdesk_id);
+
     stmts.keyMarkUsed.run(rustdesk_id, keyRow.id);
     stmts.machineUpsert.run({ seat_id: keyRow.seat_id, rustdesk_id, hostname });
 
@@ -196,6 +201,30 @@ app.post('/api/keys/verify', (req, res) => {
 // ── Admin: Get machines ────────────────────────
 app.get('/api/machines', verifyToken, (req, res) => {
   res.json(stmts.machineAll.all());
+});
+
+// ── Admin: Delete machine ────────────────────────
+app.post('/api/admin/machines/delete', verifyToken, (req, res) => {
+  try {
+    const { seat_id } = req.body;
+    if (!seat_id) return res.status(400).json({ success: false, message: 'Thiếu seat_id' });
+    
+    // Ngắt kết nối nếu máy đang online
+    const machine = stmts.machineFindBySeat.get(seat_id);
+    if (machine && machine.socket_id) {
+      io.to(machine.socket_id).emit('revoke-key', { message: 'Máy của bạn đã bị quản trị viên xóa khỏi hệ thống.' });
+      setTimeout(() => {
+        const sock = io.sockets.sockets.get(machine.socket_id);
+        if (sock) sock.disconnect(true);
+      }, 1000);
+    }
+    
+    stmts.machineDelete.run(seat_id);
+    res.json({ success: true, message: 'Đã xóa máy thành công' });
+  } catch (e) {
+    console.error('delete machine error:', e.message);
+    res.status(500).json({ success: false, message: 'Lỗi xóa máy' });
+  }
 });
 
 // ── Admin: Get keys ────────────────────────────

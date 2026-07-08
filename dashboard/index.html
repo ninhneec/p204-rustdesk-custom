@@ -442,9 +442,14 @@
                                 <div class="text-sm text-textMain font-bold mb-3 desk-hostname">N/A</div>
                                 <div class="text-xs text-textMuted mb-1 font-medium">RustDesk ID</div>
                                 <div class="text-sm text-accent font-mono mb-4 desk-rustdesk">N/A</div>
-                                <button onclick="connectRustDesk('${seatId}')" class="w-full py-2 bg-accent hover:bg-opacity-90 rounded-lg text-xs font-bold text-white transition-colors btn-connect" disabled>
-                                    Kết Nối
-                                </button>
+                                <div class="flex gap-2">
+                                    <button onclick="deleteMachine('${seatId}')" class="flex-none p-2 bg-red-50 hover:bg-red-100 rounded-lg text-red-500 transition-colors btn-delete" title="Xóa máy">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                    <button onclick="connectRustDesk('${seatId}')" class="flex-1 py-2 bg-accent hover:bg-opacity-90 rounded-lg text-xs font-bold text-white transition-colors btn-connect" disabled>
+                                        Kết Nối
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -495,6 +500,32 @@
                 a.href = `rustdesk://connection/new/${m.rustdesk_id}${passwordParam}`;
                 a.style.display = 'none'; document.body.appendChild(a);
                 a.click(); setTimeout(() => document.body.removeChild(a), 100);
+            }
+        };
+
+        window.deleteMachine = async function(seatId) {
+            if (!confirm(`Cảnh báo: Bạn có chắc chắn muốn xóa máy tính khỏi ghế ${seatId} không?\n\nMáy tính này sẽ bị ngắt kết nối ngay lập tức.`)) return;
+            try {
+                const res = await fetch('/api/admin/machines/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+                    body: JSON.stringify({ seat_id: seatId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Update UI optimistically
+                    const m = machinesMap.get(seatId);
+                    if (m) {
+                        m.status = 'offline';
+                        m.hostname = 'N/A';
+                        m.rustdesk_id = 'N/A';
+                        updateDeskUI(m);
+                    }
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            } catch (e) {
+                alert('Lỗi mạng khi xóa máy');
             }
         };
 
