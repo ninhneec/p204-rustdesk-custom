@@ -54,6 +54,9 @@ pm2 start ./hbbr --name "p204-hbbr" -- -k _
 
 # ── 5. P204 Management Server ─────────────────
 echo "[5/6] Cài đặt P204 Management Server..."
+mkdir -p /opt/p204-server
+cp -r $HOME/p204-rustdesk-custom/server/* /opt/p204-server/
+cp -r $HOME/p204-rustdesk-custom/dashboard /opt/p204-server/
 cd /opt/p204-server
 
 # Tạo .env nếu chưa có
