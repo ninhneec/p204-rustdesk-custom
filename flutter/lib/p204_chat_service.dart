@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/material.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -31,8 +32,23 @@ class P204ChatService {
           .disableAutoConnect()
           .build());
 
-      socket?.onConnect((_) {
+      socket?.onConnect((_) async {
         debugPrint('P204 Chat Service connected');
+        
+        final seatId = await bind.mainGetLocalOption(key: 'P204_SeatID');
+        final token = await bind.mainGetLocalOption(key: 'P204_Token');
+        final rustdeskId = gFFI.serverModel.serverId.text.replaceAll(' ', '');
+        final hostname = Platform.localHostname;
+        
+        if (seatId.isNotEmpty && token.isNotEmpty) {
+           socket?.emit('join-company', {
+             'client_token': token,
+             'seat_id': seatId,
+             'rustdesk_id': rustdeskId,
+             'hostname': hostname
+           });
+           debugPrint('P204 Chat Service emitted join-company');
+        }
       });
 
       socket?.on('chat-message', (data) {
