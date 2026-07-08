@@ -28,6 +28,7 @@ sudo npm install -g pm2
 
 # ── 3. Firewall ───────────────────────────────
 echo "[3/6] Cấu hình tường lửa..."
+sudo ufw allow 22/tcp
 sudo ufw allow 3000/tcp
 sudo ufw allow 21115:21119/tcp
 sudo ufw allow 21116/udp
