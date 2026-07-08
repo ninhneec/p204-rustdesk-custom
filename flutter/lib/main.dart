@@ -32,6 +32,7 @@ import 'models/platform_model.dart';
 
 import 'package:flutter_hbb/plugin/handlers.dart'
     if (dart.library.html) 'package:flutter_hbb/web/plugin/handlers.dart';
+import 'p204_chat_service.dart';
 
 /// Basic window and launch properties.
 int? kWindowId;
@@ -139,6 +140,9 @@ void runMainApp(bool startService) async {
   checkUpdate();
   // trigger connection status updater
   await bind.mainCheckConnectStatus();
+  
+  // Khởi tạo Chat Service cho P204
+  P204ChatService().init();
   if (startService) {
     gFFI.serverModel.startService();
     bind.pluginSyncUi(syncTo: kAppTypeMain);
