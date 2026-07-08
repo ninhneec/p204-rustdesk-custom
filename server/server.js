@@ -105,7 +105,10 @@ const io = new Server(httpServer, {
 
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static(path.join(__dirname, '..', 'dashboard')));
+const dashboardPath = fs.existsSync(path.join(__dirname, 'dashboard'))
+  ? path.join(__dirname, 'dashboard')
+  : path.join(__dirname, '..', 'dashboard');
+app.use(express.static(dashboardPath));
 
 // ── Rate Limiter ───────────────────────────────
 const apiLimiter = rateLimit({
