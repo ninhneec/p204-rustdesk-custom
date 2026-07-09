@@ -19,8 +19,10 @@ const io = new Server(httpServer, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-// Serve static dashboard
-app.use(express.static(path.join(__dirname, '../dashboard')));
+// Serve static dashboard (VPS flat structure: same dir, or repo: ../dashboard)
+const dashboardDir = path.join(__dirname, '../dashboard');
+const dashboardAlt = __dirname;
+app.use(express.static(fs.existsSync(dashboardDir) ? dashboardDir : dashboardAlt));
 
 const DB_FILE = path.join(__dirname, 'p204_data.json');
 
@@ -131,7 +133,9 @@ console.log('🚀 P204 Server đang khởi động...');
 
 // REST Endpoints
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dashboard/dashboard.html'));
+  const file1 = path.join(__dirname, '../dashboard/dashboard.html');
+  const file2 = path.join(__dirname, 'dashboard.html');
+  res.sendFile(fs.existsSync(file1) ? file1 : file2);
 });
 
 app.post('/login', (req, res) => {
