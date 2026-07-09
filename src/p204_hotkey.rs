@@ -1,41 +1,33 @@
 // P204 Global Hotkey + Secret Verify Panel
-// Đăng ký phím tắt toàn cục Ctrl+Alt+O/P/D để mở popup xác minh
-
-use hbb_common::log;
+// Ctrl+Alt+O/P/D to open verify popup
 
 #[cfg(target_os = "windows")]
 mod win {
     use winapi::shared::windef::HWND;
-    use winapi::shared::minwindef::{UINT, WPARAM, LPARAM};
+    use winapi::shared::minwindef::UINT;
+
+    // Virtual key codes (not in all winapi versions)
+    const VK_O: i32 = 0x4F;
+    const VK_P: i32 = 0x50;
+    const VK_D: i32 = 0x44;
 
     static mut HOTKEY_IDS: Vec<i32> = Vec::new();
 
     pub fn register_hotkeys(hwnd: isize) {
         unsafe {
-            use winapi::um::winuser::{
-                RegisterHotKey, MOD_CONTROL, MOD_ALT, MOD_NOREPEAT,
-                VK_O, VK_P, VK_D,
-            };
+            use winapi::um::winuser::{RegisterHotKey, MOD_CONTROL, MOD_ALT, MOD_NOREPEAT};
 
-            // Ctrl+Alt+O → Open verify panel
             let id1 = 0x2040;
-            if RegisterHotKey(hwnd as HWND, id1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_O as UINT) != 0 {
+            if RegisterHotKey(hwnd as HWND, id1, (MOD_CONTROL | MOD_ALT | MOD_NOREPEAT) as u32, VK_O as UINT) != 0 {
                 HOTKEY_IDS.push(id1);
-                log::info!("P204 Hotkey: Ctrl+Alt+O registered");
             }
-
-            // Ctrl+Alt+P → Quick password check
             let id2 = 0x2041;
-            if RegisterHotKey(hwnd as HWND, id2, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_P as UINT) != 0 {
+            if RegisterHotKey(hwnd as HWND, id2, (MOD_CONTROL | MOD_ALT | MOD_NOREPEAT) as u32, VK_P as UINT) != 0 {
                 HOTKEY_IDS.push(id2);
-                log::info!("P204 Hotkey: Ctrl+Alt+P registered");
             }
-
-            // Ctrl+Alt+D → Diagnostic panel
             let id3 = 0x2042;
-            if RegisterHotKey(hwnd as HWND, id3, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_D as UINT) != 0 {
+            if RegisterHotKey(hwnd as HWND, id3, (MOD_CONTROL | MOD_ALT | MOD_NOREPEAT) as u32, VK_D as UINT) != 0 {
                 HOTKEY_IDS.push(id3);
-                log::info!("P204 Hotkey: Ctrl+Alt+D registered");
             }
         }
     }
