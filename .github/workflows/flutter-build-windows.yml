@@ -32,7 +32,7 @@ jobs:
   # Windows Flutter build
   build-windows-flutter:
     name: Windows Flutter x64
-    needs: [build-TempTopMostWindow, generate-bridge]
+    needs: [generate-bridge]
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -67,12 +67,6 @@ jobs:
           name: bridge-artifact
           path: ./
 
-      - name: Download TempTopMostWindow
-        uses: actions/download-artifact@v4
-        with:
-          name: RustDeskTempTopMostWindow-windows-2022-x64-Release-Windows10
-          path: ./target/release/
-
       - name: Build Rust lib
         run: python build.py --portable --flutter --skip-portable-pack --hwcodec --vram
 
@@ -91,7 +85,7 @@ jobs:
   # Windows Portable (sciter, no Flutter)
   build-windows-portable:
     name: Windows Portable x64
-    needs: [build-TempTopMostWindow]
+    needs: [generate-bridge]
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -116,12 +110,6 @@ jobs:
       - name: vcpkg install
         shell: bash
         run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static
-
-      - name: Download TempTopMostWindow
-        uses: actions/download-artifact@v4
-        with:
-          name: RustDeskTempTopMostWindow-windows-2022-x64-Release-Windows10
-          path: ./target/release/
 
       - name: Build
         run: python build.py --portable --hwcodec --vram
