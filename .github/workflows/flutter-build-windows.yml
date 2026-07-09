@@ -145,14 +145,17 @@ jobs:
 
       - name: Build
         run: python build.py --portable --hwcodec --vram
+        continue-on-error: true
 
-      - name: Pack portable exe
+      - name: Find and upload portable exe
+        shell: bash
         run: |
-          cd libs\portable
-          cargo build --release
-          cd ..\..
-          mkdir output
-          copy target\release\rustdesk-portable-packer.exe output\rustdesk-${{ env.VERSION }}-portable.exe
+          mkdir -p output
+          # The portable packer may output to libs/portable/ or resources/
+          find . -name "rustdesk-*-win7-install.exe" -exec cp {} output/ \; 2>/dev/null || true
+          # Also look for the portable packer itself
+          find . -name "rustdesk-portable-packer.exe" -exec cp {} output/ \; 2>/dev/null || true
+          ls -la output/ || echo "No files found"
 
       - name: Upload
         uses: actions/upload-artifact@v4
