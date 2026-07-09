@@ -213,8 +213,6 @@ exclude = ["vdi/host", "examples/custom_plugin"]
 # This allows building and running on systems without libxdo installed (e.g., Wayland-only)
 [patch.crates-io]
 libxdo-sys = { path = "libs/libxdo-sys-stub" }
-libpulse-binding = { version = "=2.27.1" }
-libpulse-simple-binding = { version = "=2.27.1" }
 
 [package.metadata.winres]
 LegalCopyright = "Copyright © 2026 Purslane Tech Pte. Ltd. All rights reserved."
