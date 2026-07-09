@@ -32,7 +32,8 @@ import 'models/platform_model.dart';
 
 import 'package:flutter_hbb/plugin/handlers.dart'
     if (dart.library.html) 'package:flutter_hbb/web/plugin/handlers.dart';
-import 'p204_chat_service.dart';
+// P204: Chat is handled via Rust WebSocket agent (company_agent.rs), no need for separate Dart Socket.IO
+// import 'p204_chat_service.dart';
 
 /// Basic window and launch properties.
 int? kWindowId;
@@ -141,8 +142,9 @@ void runMainApp(bool startService) async {
   // trigger connection status updater
   await bind.mainCheckConnectStatus();
   
-  // Khởi tạo Chat Service cho P204
-  P204ChatService().init();
+  // P204: Chat is handled via Rust WebSocket agent (company_agent.rs)
+  // Removing separate Dart Socket.IO connection to avoid dual-connection conflicts
+  // P204ChatService().init();
   if (startService) {
     gFFI.serverModel.startService();
     bind.pluginSyncUi(syncTo: kAppTypeMain);

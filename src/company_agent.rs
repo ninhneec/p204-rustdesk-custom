@@ -26,6 +26,10 @@ fn backoff_delay(attempt: u32) -> Duration {
 pub async fn start_company_agent() {
     log::info!("P204 Company Agent starting...");
 
+    // Tạo kênh chat PERSISTENT — không reset khi reconnect
+    let (tx, mut rx) = mpsc::unbounded_channel::<String>();
+    *OUTGOING_CHAT.lock().unwrap() = Some(tx);
+
     let mut attempt: u32 = 0;
 
     loop {
@@ -56,10 +60,6 @@ pub async fn start_company_agent() {
         let ws_url = crate::p204_config::get_ws_url();
 
         log::info!("P204 WS URL: {}", ws_url);
-
-        // Tạo kênh chat outbound
-        let (tx, mut rx) = mpsc::unbounded_channel::<String>();
-        *OUTGOING_CHAT.lock().unwrap() = Some(tx);
 
         match connect_async(&ws_url).await {
             Ok((ws_stream, _)) => {
