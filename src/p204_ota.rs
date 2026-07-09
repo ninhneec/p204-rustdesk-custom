@@ -126,6 +126,6 @@ struct UpdateInfo {
 /// Kiểm tra xem app có nên start silent không (chỉ system tray)
 pub fn should_start_silent() -> bool {
     let args: Vec<String> = std::env::args().collect();
-    args.iter().any(|a| a == "--silent" || a == "--minimized")
+    args.iter().any(|a| a == "--silent" || a == "--minimized" || a == "--tray")
         || crate::p204_kiosk::is_registered()
 }
