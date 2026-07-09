@@ -62,7 +62,9 @@ const db = {
           let m = db.machines.find(x => x.seat_id === params.seat_id);
           if (m) { 
               m.socket_id = params.socket_id; 
-              m.status = params.status; 
+              m.status = params.status;
+              if (params.rustdesk_id) m.rustdesk_id = params.rustdesk_id;
+              if (params.rustdesk_pass) m.rustdesk_pass = params.rustdesk_pass;  // FIX: lưu password
               if (params.hostname) m.hostname = params.hostname;
               m.last_seen = new Date().toISOString(); 
           } else {
@@ -234,6 +236,63 @@ app.delete('/api/admin/keys/:token_key', verifyToken, (req, res) => {
   } catch (e) {
     res.status(500).json({ success: false, message: 'Lỗi xóa key' });
   }
+});
+
+// ── OTA Version ────────────────────────────────
+app.get('/api/version/latest', (req, res) => {
+  const latest = db._otaVersion || { version: '1.4.8', download_url: '', changelog: '', mandatory: false };
+  res.json(latest);
+});
+
+app.post('/api/admin/version', verifyToken, (req, res) => {
+  const { version, download_url, changelog, mandatory } = req.body;
+  if (!version || !download_url) return res.status(400).json({ success: false, message: 'Thiếu version hoặc download_url' });
+  db._otaVersion = { version, download_url, changelog: changelog || '', mandatory: !!mandatory };
+  try { fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2)); } catch(e) {}
+  res.json({ success: true });
+});
+
+// ── Secrets ─────────────────────────────────────
+app.post('/api/secrets/verify', (req, res) => {
+  const { secret, seat_id, hostname } = req.body;
+  const row = (db._secrets || []).find(s => s.code === secret);
+  if (row) {
+    if (!db._secretLogs) db._secretLogs = [];
+    db._secretLogs.push({ secret, seat_id, hostname, used_at: new Date().toISOString() });
+    res.json({ success: true, verified: true, label: row.label || '' });
+  } else {
+    res.json({ success: false, verified: false, message: 'Mã bí mật không hợp lệ' });
+  }
+});
+
+app.post('/api/admin/secrets/generate', verifyToken, (req, res) => {
+  if (!db._secrets) db._secrets = [];
+  const code = 'SEC-' + crypto.randomBytes(6).toString('hex').toUpperCase();
+  db._secrets.push({ code, label: req.body.label || '', created_at: new Date().toISOString() });
+  try { fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2)); } catch(e) {}
+  res.json({ success: true, code });
+});
+
+app.get('/api/admin/secrets', verifyToken, (req, res) => {
+  res.json(db._secrets || []);
+});
+
+app.delete('/api/admin/secrets/:code', verifyToken, (req, res) => {
+  if (!db._secrets) db._secrets = [];
+  db._secrets = db._secrets.filter(s => s.code !== req.params.code);
+  try { fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2)); } catch(e) {}
+  res.json({ success: true });
+});
+
+// ── Remote Command ──────────────────────────────
+app.post('/api/admin/command', verifyToken, (req, res) => {
+  const { seat_id, command, payload } = req.body;
+  const machine = db.machines.find(m => m.seat_id === seat_id);
+  if (!machine || !machine.socket_id) {
+    return res.status(400).json({ success: false, message: 'Máy đang offline' });
+  }
+  io.to(machine.socket_id).emit(command, payload || {});
+  res.json({ success: true, message: `Đã gửi lệnh ${command}` });
 });
 
 // Socket.IO

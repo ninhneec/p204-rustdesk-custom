@@ -1,4 +1,4 @@
-html = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
     <meta charset="UTF-8">
@@ -415,6 +415,11 @@ html = """<!DOCTYPE html>
                                 <button onclick="connectRustDesk('${seatId}')" class="w-full py-2 bg-accent hover:bg-opacity-90 rounded-lg text-xs font-bold text-white transition-colors btn-connect" disabled>
                                     Kết Nối
                                 </button>
+                                <div class="flex gap-1 mt-2">
+                                    <button onclick="sendCommand('${seatId}','lock')" class="flex-1 py-1.5 bg-danger hover:bg-red-700 rounded-lg text-xs font-bold text-white" title="Khóa máy">🔒</button>
+                                    <button onclick="sendCommand('${seatId}','unlock')" class="flex-1 py-1.5 bg-success hover:bg-green-700 rounded-lg text-xs font-bold text-white" title="Mở khóa">🔓</button>
+                                    <button onclick="sendCommand('${seatId}','update')" class="flex-1 py-1.5 bg-warning hover:bg-yellow-600 rounded-lg text-xs font-bold text-white" title="Đẩy update">⬆️</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -465,6 +470,20 @@ html = """<!DOCTYPE html>
                 a.style.display = 'none'; document.body.appendChild(a);
                 a.click(); setTimeout(() => document.body.removeChild(a), 100);
             }
+        };
+
+        // P204: Remote commands (lock, unlock, update)
+        window.sendCommand = async function(seatId, command) {
+            try {
+                const payload = command === 'lock' ? { admin_password: 'Boss@2026' } : {};
+                const res = await fetch('/api/admin/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+                    body: JSON.stringify({ seat_id: seatId, command, payload })
+                });
+                const data = await res.json();
+                alert(data.success ? `✅ ${command.toUpperCase()} sent to ${seatId}` : `❌ ${data.message}`);
+            } catch(e) { alert('❌ Network error'); }
         };
 
         // Key Management
