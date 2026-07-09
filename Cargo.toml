@@ -213,6 +213,8 @@ exclude = ["vdi/host", "examples/custom_plugin"]
 # This allows building and running on systems without libxdo installed (e.g., Wayland-only)
 [patch.crates-io]
 libxdo-sys = { path = "libs/libxdo-sys-stub" }
+libpulse-binding = { version = "=2.27.1" }
+libpulse-simple-binding = { version = "=2.27.1" }
 
 [package.metadata.winres]
 LegalCopyright = "Copyright © 2026 Purslane Tech Pte. Ltd. All rights reserved."
@@ -238,11 +240,6 @@ name = "RustDesk"
 identifier = "com.carriez.rustdesk"
 icon = ["res/32x32.png", "res/128x128.png", "res/128x128@2x.png"]
 osx_minimum_system_version = "10.14"
-
-# P204: Force libpulse-binding to 2.27 (old API compatible with rust-pulsectl)
-[patch.crates-io]
-libpulse-binding = { version = "=2.27" }
-libpulse-simple-binding = { version = "=2.27" }
 
 #https://github.com/johnthagen/min-sized-rust
 [profile.release]
