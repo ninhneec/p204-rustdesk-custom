@@ -68,7 +68,10 @@ class _CompanyRegisterDialogState extends State<CompanyRegisterDialog> {
         await bind.mainSetLocalOption(key: 'P204_Token', value: data['client_token']);
 
         Get.back();
-        showToast('Đăng ký máy thành công. Hệ thống đã kết nối.');
+        // Lấy rustdesk_id và password hiện tại để hiển thị cho user
+        final currentId = gFFI.serverModel.serverId.text.replaceAll(' ', '');
+        final currentPass = await bind.mainGetLocalOption(key: 'rustdesk-pass') ?? '';
+        showToast('Đăng ký thành công!\nID: $currentId\nPass: $currentPass');
       } else {
         setState(() {
           _errorMessage = data['message'] ?? 'Lỗi xác thực. Vui lòng thử lại.';
