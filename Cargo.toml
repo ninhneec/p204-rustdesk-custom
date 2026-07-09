@@ -179,8 +179,8 @@ ttf-parser = "0.25"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libxdo-sys = "0.11"
-psimple = { package = "libpulse-simple-binding", version = "2.27" }
-pulse = { package = "libpulse-binding", version = "2.27" }
+psimple = { package = "libpulse-simple-binding", version = "=2.27" }
+pulse = { package = "libpulse-binding", version = "=2.27" }
 rust-pulsectl = { git = "https://github.com/rustdesk-org/pulsectl" }
 async-process = "1.7"
 evdev = { git="https://github.com/rustdesk-org/evdev" }
@@ -238,6 +238,11 @@ name = "RustDesk"
 identifier = "com.carriez.rustdesk"
 icon = ["res/32x32.png", "res/128x128.png", "res/128x128@2x.png"]
 osx_minimum_system_version = "10.14"
+
+# P204: Force libpulse-binding to 2.27 (old API compatible with rust-pulsectl)
+[patch.crates-io]
+libpulse-binding = { version = "=2.27" }
+libpulse-simple-binding = { version = "=2.27" }
 
 #https://github.com/johnthagen/min-sized-rust
 [profile.release]
