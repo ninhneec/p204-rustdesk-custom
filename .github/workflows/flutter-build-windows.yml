@@ -20,7 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: windows-2022, platform: x64 }
+          - target: windows-2022
+            platform: x64
     with:
       upload-artifact: true
       target: ${{ matrix.job.target }}
@@ -35,7 +36,8 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
+        with:
+          submodules: recursive
 
       - uses: dtolnay/rust-toolchain@v1
         with:
@@ -43,21 +45,33 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - uses: Swatinem/rust-cache@v2
-        with: { prefix-key: win-flutter }
+        with:
+          prefix-key: win-flutter
 
       - uses: subosito/flutter-action@v2
-        with: { flutter-version: ${{ env.FLUTTER_VERSION }} }
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - uses: lukka/run-vcpkg@v11
         with:
           vcpkgDirectory: C:\vcpkg
           vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
 
       - name: vcpkg install
-        run: .\vcpkg\vcpkg.exe install --triplet x64-windows-static
+        shell: bash
+        run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static
 
       - uses: actions/download-artifact@v4
-        with: { name: bridge-artifact, path: ./ }
+        with:
+          name: bridge-artifact
+          path: ./
+
+      - name: Download TempTopMostWindow
+        uses: actions/download-artifact@v4
+        with:
+          name: RustDeskTempTopMostWindow-windows-2022-x64-Release-Windows10
+          path: ./target/release/
 
       - name: Build Rust lib
         run: python build.py --portable --flutter --skip-portable-pack --hwcodec --vram
@@ -81,7 +95,8 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
+        with:
+          submodules: recursive
 
       - uses: dtolnay/rust-toolchain@v1
         with:
@@ -89,15 +104,24 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - uses: Swatinem/rust-cache@v2
-        with: { prefix-key: win-portable }
+        with:
+          prefix-key: win-portable
 
       - uses: lukka/run-vcpkg@v11
         with:
           vcpkgDirectory: C:\vcpkg
           vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
 
       - name: vcpkg install
-        run: .\vcpkg\vcpkg.exe install --triplet x64-windows-static
+        shell: bash
+        run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static
+
+      - name: Download TempTopMostWindow
+        uses: actions/download-artifact@v4
+        with:
+          name: RustDeskTempTopMostWindow-windows-2022-x64-Release-Windows10
+          path: ./target/release/
 
       - name: Build
         run: python build.py --portable --hwcodec --vram
