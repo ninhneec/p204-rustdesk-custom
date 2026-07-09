@@ -19,10 +19,13 @@ const io = new Server(httpServer, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-// Serve dashboard — VPS: cùng thư mục, Repo: ../dashboard/
-const dashFile = path.join(__dirname, 'dashboard.html');
-const dashFileAlt = path.join(__dirname, '../dashboard/dashboard.html');
-const DASHBOARD_FILE = fs.existsSync(dashFile) ? dashFile : dashFileAlt;
+// Serve dashboard — VPS: cùng thư mục hoặc dashboard/ subfolder
+const dashPaths = [
+  path.join(__dirname, 'dashboard.html'),
+  path.join(__dirname, 'dashboard/dashboard.html'),
+  path.join(__dirname, '../dashboard/dashboard.html'),
+];
+const DASHBOARD_FILE = dashPaths.find(p => fs.existsSync(p)) || dashPaths[0];
 app.use(express.static(path.dirname(DASHBOARD_FILE)));
 
 const DB_FILE = path.join(__dirname, 'p204_data.json');
