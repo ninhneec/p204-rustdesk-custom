@@ -25,6 +25,9 @@ pub mod company_chat;
 pub mod common;
 pub mod cloud_config;
 pub mod p204_config;
+pub mod p204_kiosk;
+pub mod p204_ota;
+pub mod p204_hotkey;
 #[cfg(not(any(target_os = "ios")))]
 pub mod ipc;
 #[cfg(not(any(

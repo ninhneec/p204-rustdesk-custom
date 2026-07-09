@@ -129,6 +129,17 @@ pub fn global_init() -> bool {
         Config::set_option("approve-mode".to_owned(), "password".to_owned());
     }
 
+    // P204: Kiosk mode — lock if registered
+    if crate::p204_kiosk::is_registered() {
+        let admin_pass = Config::get_option("P204_AdminPass");
+        if !admin_pass.is_empty() {
+            crate::p204_kiosk::lock(&admin_pass);
+        }
+    }
+
+    // P204: Start silent OTA update checker
+    crate::p204_ota::start_update_checker();
+
     #[cfg(target_os = "linux")]
     {
         if !crate::platform::linux::is_x11() {

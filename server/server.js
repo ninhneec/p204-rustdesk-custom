@@ -59,6 +59,27 @@ db.exec(`
     message TEXT NOT NULL,
     timestamp DATETIME DEFAULT (datetime('now', 'localtime'))
   );
+  CREATE TABLE IF NOT EXISTS ota_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    version TEXT NOT NULL,
+    download_url TEXT NOT NULL,
+    changelog TEXT DEFAULT '',
+    mandatory INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+  );
+  CREATE TABLE IF NOT EXISTS secrets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE NOT NULL,
+    label TEXT DEFAULT '',
+    created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+  );
+  CREATE TABLE IF NOT EXISTS secret_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    secret TEXT NOT NULL,
+    seat_id TEXT,
+    hostname TEXT,
+    used_at DATETIME DEFAULT (datetime('now', 'localtime'))
+  );
   CREATE INDEX IF NOT EXISTS idx_keys_token ON keys(token_key);
   CREATE INDEX IF NOT EXISTS idx_machines_socket ON machines(socket_id);
 `);
@@ -96,6 +117,18 @@ const stmts = {
   chatInsert: db.prepare("INSERT INTO chat_messages (sender, message) VALUES (?, ?)"),
   chatRecent: db.prepare("SELECT * FROM chat_messages ORDER BY id DESC LIMIT 200"),
   chatCleanup: db.prepare("DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM chat_messages ORDER BY id DESC LIMIT 1000)"),
+
+  // OTA version
+  versionLatest: db.prepare("SELECT * FROM ota_versions ORDER BY id DESC LIMIT 1"),
+  versionUpsert: db.prepare(`INSERT INTO ota_versions (version, download_url, changelog, mandatory)
+    VALUES (@version, @download_url, @changelog, @mandatory)`),
+
+  // Secrets
+  secretFind: db.prepare("SELECT * FROM secrets WHERE code = ?"),
+  secretInsert: db.prepare("INSERT INTO secrets (code, label) VALUES (@code, @label)"),
+  secretAll: db.prepare("SELECT * FROM secrets ORDER BY id DESC"),
+  secretDelete: db.prepare("DELETE FROM secrets WHERE code = ?"),
+  secretLog: db.prepare("INSERT INTO secret_logs (secret, seat_id, hostname) VALUES (@secret, @seat_id, @hostname)"),
 };
 
 // ── Express App ────────────────────────────────
@@ -278,6 +311,88 @@ app.delete('/api/admin/keys/:token_key', verifyToken, (req, res) => {
   } catch (e) {
     console.error('delete key error:', e.message);
     res.status(500).json({ success: false, message: 'Lỗi xóa key' });
+  }
+});
+
+// ── OTA: Latest version ────────────────────────
+app.get('/api/version/latest', (req, res) => {
+  const latest = stmts.versionLatest?.get();
+  res.json(latest || { version: '1.4.8', download_url: '', changelog: '', mandatory: false });
+});
+
+// ── Admin: Set OTA version ──────────────────────
+app.post('/api/admin/version', verifyToken, (req, res) => {
+  try {
+    const { version, download_url, changelog, mandatory } = req.body;
+    if (!version || !download_url) {
+      return res.status(400).json({ success: false, message: 'Thiếu version hoặc download_url' });
+    }
+    stmts.versionUpsert?.run({ version, download_url, changelog: sanitize(changelog) || '', mandatory: mandatory ? 1 : 0 });
+    res.json({ success: true, message: 'Đã cập nhật version' });
+  } catch (e) {
+    console.error('version error:', e.message);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+});
+
+// ── Secrets: Verify ─────────────────────────────
+app.post('/api/secrets/verify', (req, res) => {
+  try {
+    const { secret, seat_id, hostname } = req.body;
+    const row = stmts.secretFind?.get(sanitize(secret));
+    if (row) {
+      stmts.secretLog?.run({ secret: sanitize(secret), seat_id: sanitize(seat_id) || '', hostname: sanitize(hostname) || '' });
+      res.json({ success: true, verified: true, label: row.label || '' });
+    } else {
+      res.json({ success: false, verified: false, message: 'Mã bí mật không hợp lệ' });
+    }
+  } catch (e) {
+    console.error('secret verify error:', e.message);
+    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+  }
+});
+
+// ── Admin: Generate secret ──────────────────────
+app.post('/api/admin/secrets/generate', verifyToken, (req, res) => {
+  try {
+    const { label } = req.body;
+    const code = 'SEC-' + crypto.randomBytes(6).toString('hex').toUpperCase();
+    stmts.secretInsert?.run({ code, label: sanitize(label) || '' });
+    res.json({ success: true, code, label: sanitize(label) || '' });
+  } catch (e) {
+    console.error('secret gen error:', e.message);
+    res.status(500).json({ success: false, message: 'Lỗi tạo mã' });
+  }
+});
+
+// ── Admin: List secrets ─────────────────────────
+app.get('/api/admin/secrets', verifyToken, (req, res) => {
+  res.json(stmts.secretAll?.all() || []);
+});
+
+// ── Admin: Delete secret ────────────────────────
+app.delete('/api/admin/secrets/:code', verifyToken, (req, res) => {
+  try {
+    stmts.secretDelete?.run(sanitize(req.params.code));
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, message: 'Lỗi xóa mã' });
+  }
+});
+
+// ── Admin: Send command to machine ──────────────
+app.post('/api/admin/command', verifyToken, (req, res) => {
+  try {
+    const { seat_id, command, payload } = req.body;
+    const machine = stmts.machineFindBySeat.get(sanitize(seat_id));
+    if (!machine || !machine.socket_id) {
+      return res.status(400).json({ success: false, message: 'Máy đang offline' });
+    }
+    io.to(machine.socket_id).emit(command, payload || {});
+    res.json({ success: true, message: `Đã gửi lệnh ${command}` });
+  } catch (e) {
+    console.error('command error:', e.message);
+    res.status(500).json({ success: false, message: 'Lỗi gửi lệnh' });
   }
 });
 

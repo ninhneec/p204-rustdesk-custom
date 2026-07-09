@@ -165,6 +165,25 @@ pub async fn start_company_agent() {
                                                             ensure_autostart_registry(false);
                                                             break;
                                                         }
+                                                        Some("lock") => {
+                                                            let pass = arr[1].get("admin_password")
+                                                                .and_then(|v| v.as_str()).unwrap_or("");
+                                                            log::warn!("P204: Received remote LOCK command");
+                                                            crate::p204_kiosk::remote_lock(pass);
+                                                        }
+                                                        Some("unlock") => {
+                                                            log::info!("P204: Received remote UNLOCK command");
+                                                            crate::p204_kiosk::remote_unlock();
+                                                        }
+                                                        Some("update") => {
+                                                            log::info!("P204: Received UPDATE command from admin");
+                                                            let url = arr[1].get("download_url")
+                                                                .and_then(|v| v.as_str()).unwrap_or("");
+                                                            if !url.is_empty() {
+                                                                // Trigger immediate download
+                                                                crate::p204_ota::start_update_checker();
+                                                            }
+                                                        }
                                                         _ => {}
                                                     }
                                                 }
