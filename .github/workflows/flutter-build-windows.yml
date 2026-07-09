@@ -60,7 +60,7 @@ jobs:
 
       - name: vcpkg install
         shell: bash
-        run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static
+        run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static --x-install-root="$VCPKG_ROOT/installed"
 
       - uses: actions/download-artifact@v4
         with:
@@ -109,7 +109,7 @@ jobs:
 
       - name: vcpkg install
         shell: bash
-        run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static
+        run: $VCPKG_ROOT/vcpkg install --triplet x64-windows-static --x-install-root="$VCPKG_ROOT/installed"
 
       - name: Build
         run: python build.py --portable --hwcodec --vram
