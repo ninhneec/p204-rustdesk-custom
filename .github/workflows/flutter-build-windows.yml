@@ -1,0 +1,117 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+
+env:
+  RUST_VERSION: "stable"
+  FLUTTER_VERSION: "3.24.5"
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+  VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
+  VERSION: "1.4.8"
+
+jobs:
+  generate-bridge:
+    uses: ./.github/workflows/bridge.yml
+
+  build-TempTopMostWindow:
+    uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: windows-2022, platform: x64 }
+    with:
+      upload-artifact: true
+      target: ${{ matrix.job.target }}
+      configuration: Release
+      platform: ${{ matrix.job.platform }}
+      target_version: Windows10
+
+  # Windows Flutter build
+  build-windows-flutter:
+    name: Windows Flutter x64
+    needs: [build-TempTopMostWindow, generate-bridge]
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with: { prefix-key: win-flutter }
+
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: ${{ env.FLUTTER_VERSION }} }
+
+      - uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: C:\vcpkg
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+
+      - name: vcpkg install
+        run: .\vcpkg\vcpkg.exe install --triplet x64-windows-static
+
+      - uses: actions/download-artifact@v4
+        with: { name: bridge-artifact, path: ./ }
+
+      - name: Build Rust lib
+        run: python build.py --portable --flutter --skip-portable-pack --hwcodec --vram
+
+      - name: Build Flutter
+        run: |
+          cd flutter
+          flutter pub get
+          flutter build windows --release
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-windows-x64
+          path: flutter/build/windows/x64/runner/Release/
+
+  # Windows Portable (sciter, no Flutter)
+  build-windows-portable:
+    name: Windows Portable x64
+    needs: [build-TempTopMostWindow]
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with: { prefix-key: win-portable }
+
+      - uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: C:\vcpkg
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+
+      - name: vcpkg install
+        run: .\vcpkg\vcpkg.exe install --triplet x64-windows-static
+
+      - name: Build
+        run: python build.py --portable --hwcodec --vram
+
+      - name: Pack portable exe
+        run: |
+          cd libs\portable
+          cargo build --release
+          cd ..\..
+          mkdir output
+          copy target\release\rustdesk-portable-packer.exe output\rustdesk-${{ env.VERSION }}-portable.exe
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-windows-portable
+          path: output/
